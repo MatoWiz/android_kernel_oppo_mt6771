@@ -32,6 +32,7 @@
 #include "mach/mtk_thermal.h"
 #include "mtk_thermal_timer.h"
 #include <mtk_ts_setting.h>
+#include <soc/oplus/system/oppo_project.h>
 
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mtk_clkmgr.h>
@@ -1611,13 +1612,17 @@ static void read_all_tc_temperature(void)
 		if (lvts_hw_protect_enabled) {
 			dump_lvts_error_info();
 			tscpu_printk("thermal_hw_protect_en\n");
-			BUG();
+			if (get_eng_version() != HIGH_TEMP_AGING)
+				BUG();
+			else
+				pr_info("%s should reset but bypass\n", __func__);
 		} else {
 			tscpu_printk("thermal_hw_protect_dis\n");
 		}
 #else
 		dump_lvts_error_info();
-		BUG();
+		if (get_eng_version() != HIGH_TEMP_AGING)
+			BUG();
 #endif
 
 	}
@@ -2714,6 +2719,12 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 
 	if (err)
 		tscpu_warn("tscpu_init IRQ register fail\n");
+
+#ifdef CFG_THERM_MCU_LVTS
+	err = request_irq(thermal_mcu_irq_number,
+				lvts_tscpu_thermal_all_tc_interrupt_handler,
+				IRQF_TRIGGER_NONE, THERMAL_NAME, NULL);
+#endif
 #else
 	err = request_irq(THERM_CTRL_IRQ_BIT_ID,
 #if CFG_LVTS_DOMINATOR

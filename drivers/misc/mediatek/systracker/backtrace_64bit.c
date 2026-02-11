@@ -87,7 +87,7 @@ void save_sys_bt(unsigned long long time_stamp,
 	aee_print_ip_sym(tracker_bt.fp4, time_stamp, cpu, t);
 	aee_print_ip_sym(tracker_bt.fp5, time_stamp, cpu, t);
 	aee_print_ip_sym(tracker_bt.fp6, time_stamp, cpu, t);
-#ifdef CONFIG_MTK_SYSTRACKER_V2
+#if 0   //#ifdef CONFIG_MTK_SYSTRACKER_V2
 	len = snprintf(dbg_st, sizeof(dbg_st),
 			"CPU%d 0x10000220=0x%x - (%d)<%d>[%lld]\n",
 				tracker_bt.cpu,

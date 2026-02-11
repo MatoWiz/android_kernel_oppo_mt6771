@@ -691,6 +691,20 @@ int charger_dev_notify(struct charger_device *chg_dev, int event)
 		&chg_dev->evt_nh, event, &chg_dev->noti);
 }
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6771
+int charger_dev_enable_pmic_shipmode(struct charger_device *charger_dev)
+{
+	int ret = 1;
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_ship_mode) {
+		charger_dev->ops->enable_ship_mode(charger_dev);
+		return ret;
+	}
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_pmic_shipmode);
+#endif /*VENDOR_EDIT*/
+
 int charger_dev_enable_usbid(struct charger_device *charger_dev, bool en)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL &&
@@ -779,6 +793,37 @@ int charger_dev_enable_bleed_discharge(struct charger_device *charger_dev,
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_enable_bleed_discharge);
+
+#ifdef CONFIG_OPLUS_CHARGER_MTK6769
+int charger_dev_send_hvdcp_pattern_ex(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+					   charger_dev->ops->send_hvdcp_pattern_ex)
+		return charger_dev->ops->send_hvdcp_pattern_ex(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_send_hvdcp_pattern_ex);
+
+int charger_dev_reset_hvdcp_ta_ex(struct charger_device *chg_dev)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->reset_hvdcp_ta_ex)
+		return chg_dev->ops->reset_hvdcp_ta_ex(chg_dev);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_reset_hvdcp_ta_ex);
+
+int charger_dev_hvdcp_can_enabled(struct charger_device *chg_dev, bool *en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->hvdcp_can_enabled)
+		return chg_dev->ops->hvdcp_can_enabled(chg_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_hvdcp_can_enabled);
+#endif /*CONFIG_OPLUS_CHARGER_MTK6769*/
 
 static DEVICE_ATTR(name, 0444, charger_show_name, NULL);
 

@@ -39,6 +39,23 @@
 #endif
 
 #include "mt6359.h"
+#ifdef CONFIG_SND_SOC_CODEC_AW87339
+extern unsigned char aw87339_audio_spk_if_kspk(void);
+extern unsigned char aw87339_audio_rcv_if_kspk(void);
+extern unsigned char aw87339_audio_rcv_if_drcv(void);
+extern unsigned char aw87339_audio_spk_if_off(void);
+extern unsigned char aw87339_audio_rcv_if_off(void);
+
+extern void aw87339_voice_setting(int bStatus);
+extern int aw87339_voice_status;
+extern void aw87339_audio_spk_low_voltage_status(bool bStatus);
+extern int aw87339_spk_low_voltage_status;
+
+static int aw87339_kspk_control_spk = 0;
+static int aw87339_kspk_control_rcv = 0;
+static int aw87339_drcv_control_rcv = 0;
+
+#endif /* CONFIG_SND_SOC_CODEC_AW87339 */
 
 enum {
 	MT6359_AIF_1 = 0,	/* dl: hp, rcv, hp+lo */
@@ -289,6 +306,34 @@ struct mt6359_priv {
 /* static function declaration */
 static int dc_trim_thread(void *arg);
 
+#ifdef CONFIG_SND_SOC_DBMDX
+extern void set_vaud18_enable(bool enable);
+extern struct regmap *mt6359_ep_regmap;
+
+struct regmap *mt6359_ep_regmap;
+
+void set_vaud18_enable(bool enable)
+{
+	pr_info("%s: enable = %d", __func__, enable);
+
+	if (mt6359_ep_regmap == NULL) {
+		pr_err("%s: no regmap enable = %d", __func__, enable);
+		return;
+	}
+
+	if (enable) {
+		regmap_write(mt6359_ep_regmap, MT6359_AUDENC_ANA_CON15, 0x0021);
+		regmap_update_bits(mt6359_ep_regmap, MT6359_AUDDEC_ANA_CON13,
+			RG_AUDGLB_PWRDN_VA32_MASK_SFT,
+			0 << RG_AUDGLB_PWRDN_VA32_SFT);
+	} else {
+		regmap_write(mt6359_ep_regmap, MT6359_AUDENC_ANA_CON15, 0x0000);
+	}
+
+	return;
+}
+#endif /* CONFIG_SND_SOC_DBMDX */
+
 int mt6359_set_codec_ops(struct snd_soc_component *cmpnt,
 			 struct mt6359_codec_ops *ops)
 {
@@ -453,9 +498,14 @@ static int mt6359_set_clksq(struct mt6359_priv *priv, bool enable)
 /* use only when not govern by DAPM */
 static int mt6359_set_aud_global_bias(struct mt6359_priv *priv, bool enable)
 {
+#ifndef CONFIG_SND_SOC_DBMDX
 	regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON13,
 			   RG_AUDGLB_PWRDN_VA32_MASK_SFT,
 			   (enable ? 0 : 1) << RG_AUDGLB_PWRDN_VA32_SFT);
+#else
+	dev_warn(priv->dev, "%s(), enable= %d ,but not set\n",
+		__func__, enable);
+#endif /*CONFIG_SND_SOC_DBMDX*/
 	return 0;
 }
 
@@ -867,6 +917,121 @@ static int dl_pga_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_CODEC_AW87339
+static int ext_kspk_amp_get_spk(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+    ucontrol->value.integer.value[0] = aw87339_kspk_control_spk;
+    pr_debug("%s: aw87339_kspk_control = %d\n", __func__, aw87339_kspk_control_spk);
+    return 0;
+}
+static int ext_kspk_amp_put_spk(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+    if(ucontrol->value.integer.value[0] == aw87339_kspk_control_spk)
+        return 1;
+    aw87339_kspk_control_spk = ucontrol->value.integer.value[0];
+    if(ucontrol->value.integer.value[0]) {
+        aw87339_audio_spk_if_kspk();
+    } else {
+        aw87339_audio_spk_if_off();
+    }
+    pr_debug("%s: value.integer.value = %d\n", __func__, ucontrol->value.integer.value[0]);
+    return 0;
+}
+static int ext_kspk_amp_get_rcv(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+    ucontrol->value.integer.value[0] = aw87339_kspk_control_rcv;
+    pr_debug("%s: aw87339_kspk_control = %d\n", __func__, aw87339_kspk_control_rcv);
+    return 0;
+}
+static int ext_kspk_amp_put_rcv(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+    if(ucontrol->value.integer.value[0] == aw87339_kspk_control_rcv)
+        return 1;
+    aw87339_kspk_control_rcv = ucontrol->value.integer.value[0];
+    if(ucontrol->value.integer.value[0]) {
+        aw87339_audio_rcv_if_kspk();
+    } else {
+        aw87339_audio_rcv_if_off();
+    }
+    pr_debug("%s: value.integer.value = %d\n", __func__, ucontrol->value.integer.value[0]);
+    return 0;
+}
+
+static int ext_drcv_amp_get_rcv(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+    ucontrol->value.integer.value[0] = aw87339_drcv_control_rcv;
+    pr_debug("%s: aw87339_drcv_control = %d\n", __func__, aw87339_drcv_control_rcv);
+    return 0;
+}
+
+static int ext_drcv_amp_put_rcv(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+    if(ucontrol->value.integer.value[0] == aw87339_drcv_control_rcv)
+        return 1;
+    aw87339_drcv_control_rcv = ucontrol->value.integer.value[0];
+    if(ucontrol->value.integer.value[0]) {
+        aw87339_audio_rcv_if_drcv();
+    } else {
+        aw87339_audio_rcv_if_off();
+    }
+    pr_debug("%s: value.integer.value = %d\n", __func__, ucontrol->value.integer.value[0]);
+    return 0;
+}
+
+static int ext_amp_low_voltage_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+        ucontrol->value.integer.value[0] = aw87339_spk_low_voltage_status;
+        pr_info("%s: aw87339_spk_low_voltage_status = %d\n", __func__, aw87339_spk_low_voltage_status);
+        return 0;
+}
+
+static int ext_amp_low_voltage_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+        if (ucontrol->value.integer.value[0] == aw87339_spk_low_voltage_status)
+                return 1;
+        if (ucontrol->value.integer.value[0] == 1) {
+                aw87339_audio_spk_low_voltage_status(1);
+        } else {
+                aw87339_audio_spk_low_voltage_status(0);
+        }
+
+        pr_info("%s: value.integer.value = %ld\n", __func__, ucontrol->value.integer.value[0]);
+        return 0;
+}
+
+static int ext_amp_voice_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = aw87339_voice_status;
+	pr_info("%s: aw87339_voice_status = %d\n", __func__, aw87339_voice_status);
+	return 0;
+}
+
+static int ext_amp_voice_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.integer.value[0] == aw87339_voice_status)
+		return 1;
+	if (ucontrol->value.integer.value[0] == 1) {
+		aw87339_voice_setting(1);
+	} else {
+		aw87339_voice_setting(0);
+	}
+
+	pr_info("%s: value.integer.value = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	return 0;
+}
+
+
+
+
+
+static const char *const ext_kspk_amp_function_spk[] = { "Off", "On" };
+static const char *const ext_kspk_amp_function_rcv[] = { "Off", "On" };
+static const char *const ext_drcv_amp_function_rcv[] = { "Off", "On" };
+static const char *const ext_amp_low_vol_function[] = { "Off", "On" };
+
+static const char *const ext_amp_voice_function[] = { "Off", "On" };
+#endif /* CONFIG_SND_SOC_CODEC_AW87339 */
+
 static int mt6359_put_volsw(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
@@ -934,6 +1099,13 @@ static const DECLARE_TLV_DB_SCALE(capture_tlv, 0, 600, 0);
 static const struct soc_enum dl_pga_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dl_pga_gain), dl_pga_gain),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(hp_dl_pga_gain), hp_dl_pga_gain),
+	#ifdef CONFIG_SND_SOC_CODEC_AW87339
+    SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_kspk_amp_function_spk), ext_kspk_amp_function_spk),
+    SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_kspk_amp_function_rcv), ext_kspk_amp_function_rcv),
+    SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_drcv_amp_function_rcv), ext_drcv_amp_function_rcv),
+    SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_amp_low_vol_function), ext_amp_low_vol_function),
+    SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_amp_voice_function), ext_amp_voice_function),
+	#endif /* CONFIG_SND_SOC_CODEC_AW87339 */
 };
 
 #define MT_SOC_ENUM_EXT_ID(xname, xenum, xhandler_get, xhandler_put, id) \
@@ -977,6 +1149,13 @@ static const struct snd_kcontrol_new mt6359_snd_controls[] = {
 	MT_SOC_ENUM_EXT_ID("Lineout_PGAR_GAIN", dl_pga_enum[0],
 			   dl_pga_get, dl_pga_set,
 			   AUDIO_ANALOG_VOLUME_LINEOUTR),
+	#ifdef CONFIG_SND_SOC_CODEC_AW87339
+	SOC_ENUM_EXT("Ext_Speaker_Amp_spkmode", dl_pga_enum[2], ext_kspk_amp_get_spk, ext_kspk_amp_put_spk),
+	SOC_ENUM_EXT("Ext_Receiver_Amp_spkmode", dl_pga_enum[3], ext_kspk_amp_get_rcv, ext_kspk_amp_put_rcv),
+	SOC_ENUM_EXT("Ext_Receiver_Amp_rcvmode", dl_pga_enum[4], ext_drcv_amp_get_rcv, ext_drcv_amp_put_rcv),
+        SOC_ENUM_EXT("Ext_AMP_LOW_VOLTAGE", dl_pga_enum[5], ext_amp_low_voltage_get, ext_amp_low_voltage_set),
+	SOC_ENUM_EXT("EXT_AMP_VOICE_SETTING", dl_pga_enum[6], ext_amp_voice_get, ext_amp_voice_set),
+	#endif
 };
 
 /* ul pga gain */
@@ -2311,11 +2490,16 @@ static int mt_mic_bias_0_event(struct snd_soc_dapm_widget *w,
 					   0xff00, 0x0000);
 			break;
 		}
-
+#ifdef CONFIG_SND_SOC_CODEC_MICBIAS_2P5V
 		/* MISBIAS0 = 1P9V */
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON15,
 				   RG_AUDMICBIAS0VREF_MASK_SFT,
+				   MIC_BIAS_2P5 << RG_AUDMICBIAS0VREF_SFT);
+#else
+		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON15,
+				   RG_AUDMICBIAS0VREF_MASK_SFT,
 				   MIC_BIAS_1P9 << RG_AUDMICBIAS0VREF_SFT);
+#endif
 		/* vow low power select */
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON15,
 				   RG_AUDMICBIAS0LOWPEN_MASK_SFT,
@@ -2323,8 +2507,10 @@ static int mt_mic_bias_0_event(struct snd_soc_dapm_widget *w,
 				   << RG_AUDMICBIAS0LOWPEN_SFT);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
+#ifndef CONFIG_SND_SOC_DBMDX
 		/* Disable MICBIAS0, MISBIAS0 = 1P7V */
 		regmap_write(priv->regmap, MT6359_AUDENC_ANA_CON15, 0x0000);
+#endif
 		break;
 	default:
 		break;
@@ -2351,8 +2537,13 @@ static int mt_mic_bias_1_event(struct snd_soc_dapm_widget *w,
 			regmap_write(priv->regmap,
 				     MT6359_AUDENC_ANA_CON16, 0x0160);
 		else
+#ifdef CONFIG_SND_SOC_CODEC_MICBIAS_2P8V
+			regmap_write(priv->regmap,
+				     MT6359_AUDENC_ANA_CON16, 0x3060);
+#else /* CONFIG_SND_SOC_CODEC_MICBIAS_2P8V */
 			regmap_write(priv->regmap,
 				     MT6359_AUDENC_ANA_CON16, 0x0060);
+#endif /* CONFIG_SND_SOC_CODEC_MICBIAS_2P8V */
 
 		/* vow low power select */
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON16,
@@ -2399,11 +2590,16 @@ static int mt_mic_bias_2_event(struct snd_soc_dapm_widget *w,
 					   0xff00, 0x0000);
 			break;
 		}
-
+#ifdef CONFIG_SND_SOC_CODEC_MICBIAS_2P5V
 		/* MISBIAS2 = 1P9V */
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON17,
 				   RG_AUDMICBIAS2VREF_MASK_SFT,
+				   MIC_BIAS_2P5 << RG_AUDMICBIAS2VREF_SFT);
+#else
+		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON17,
+			       RG_AUDMICBIAS2VREF_MASK_SFT,
 				   MIC_BIAS_1P9 << RG_AUDMICBIAS2VREF_SFT);
+#endif
 		/* vow low power select */
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON17,
 				   RG_AUDMICBIAS2LOWPEN_MASK_SFT,
@@ -3593,18 +3789,52 @@ static int mt_dc_trim_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_DBMDX
+static int mt_aud_gob_bias_event(struct snd_soc_dapm_widget *w,
+				    struct snd_kcontrol *kcontrol,
+				    int event)
+{
+	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
+	struct mt6359_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON13,
+			RG_AUDGLB_PWRDN_VA32_MASK_SFT,
+			0 << RG_AUDGLB_PWRDN_VA32_SFT);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+#endif
+
 /* DAPM Widgets */
 static const struct snd_soc_dapm_widget mt6359_dapm_widgets[] = {
 	/* Global Supply*/
 	SND_SOC_DAPM_SUPPLY_S("CLK_BUF", SUPPLY_SEQ_CLK_BUF,
 			      MT6359_DCXO_CW12,
 			      RG_XO_AUDIO_EN_M_SFT, 0, NULL, 0),
+#ifdef CONFIG_SND_SOC_DBMDX
+	SND_SOC_DAPM_SUPPLY_S("LDO_VAUD18", SUPPLY_SEQ_LDO_VAUD18,
+			      SND_SOC_NOPM,
+			      0, 0, NULL, 0),
+#else /* CONFIG_SND_SOC_DBMDX */
 	SND_SOC_DAPM_SUPPLY_S("LDO_VAUD18", SUPPLY_SEQ_LDO_VAUD18,
 			      MT6359_LDO_VAUD18_CON0,
 			      RG_LDO_VAUD18_EN_SFT, 0, NULL, 0),
+#endif /* CONFIG_SND_SOC_DBMDX */
+#ifdef CONFIG_SND_SOC_DBMDX
+	SND_SOC_DAPM_SUPPLY_S("AUDGLB", SUPPLY_SEQ_AUD_GLB,
+			      SND_SOC_NOPM,0, 0,
+			      mt_aud_gob_bias_event,
+			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+#else
 	SND_SOC_DAPM_SUPPLY_S("AUDGLB", SUPPLY_SEQ_AUD_GLB,
 			      MT6359_AUDDEC_ANA_CON13,
 			      RG_AUDGLB_PWRDN_VA32_SFT, 1, NULL, 0),
+#endif /* CONFIG_SND_SOC_DBMDX */
 	SND_SOC_DAPM_SUPPLY_S("AUDGLB_VOW", SUPPLY_SEQ_AUD_GLB_VOW,
 			      MT6359_AUDDEC_ANA_CON13,
 			      RG_AUDGLB_LP2_VOW_EN_VA32_SFT, 0, NULL, 0),
@@ -3982,11 +4212,19 @@ static const struct snd_soc_dapm_widget mt6359_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("AIN3_DMIC"),
 
 	/* mic bias */
+
+#ifdef CONFIG_SND_SOC_DBMDX
+	SND_SOC_DAPM_SUPPLY_S("MIC_BIAS_0", SUPPLY_SEQ_MIC_BIAS,
+			      SND_SOC_NOPM,0, 0,
+			      mt_mic_bias_0_event,
+			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+#else
 	SND_SOC_DAPM_SUPPLY_S("MIC_BIAS_0", SUPPLY_SEQ_MIC_BIAS,
 			      MT6359_AUDENC_ANA_CON15,
 			      RG_AUDPWDBMICBIAS0_SFT, 0,
 			      mt_mic_bias_0_event,
 			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+#endif
 	SND_SOC_DAPM_SUPPLY_S("MIC_BIAS_1", SUPPLY_SEQ_MIC_BIAS,
 			      MT6359_AUDENC_ANA_CON16,
 			      RG_AUDPWDBMICBIAS1_SFT, 0,
@@ -4520,6 +4758,7 @@ static void enable_trim_buf(struct mt6359_priv *priv, bool enable)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static void enable_trim_circuit(struct mt6359_priv *priv, bool enable)
 {
+	pr_info("%s: set %d\n", __func__, enable);
 	if (enable) {
 		regmap_update_bits(priv->regmap, MT6359_LDO_VAUD18_CON0,
 				   RG_LDO_VAUD18_EN_MASK_SFT,
@@ -4534,10 +4773,11 @@ static void enable_trim_circuit(struct mt6359_priv *priv, bool enable)
 		regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON2,
 				   RG_AUDHPTRIM_EN_VAUDP32_MASK_SFT,
 				   0 << RG_AUDHPTRIM_EN_VAUDP32_SFT);
-
+#ifndef CONFIG_SND_SOC_DBMDX
 		regmap_update_bits(priv->regmap, MT6359_LDO_VAUD18_CON0,
 				   RG_LDO_VAUD18_EN_MASK_SFT,
 				   0 << RG_LDO_VAUD18_EN_SFT);
+#endif /* CONFIG_SND_SOC_DBMDX */
 	}
 }
 
@@ -6218,8 +6458,10 @@ static int mt6359_rcv_dcc_set(struct snd_kcontrol *kcontrol,
 
 	/* receiver downlink */
 	playback_gpio_set(priv);
+#ifndef CONFIG_SND_SOC_DBMDX
 	regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON13,
 			   RG_AUDGLB_PWRDN_VA32_MASK_SFT, 0x0);
+#endif /* CONFIG_SND_SOC_DBMDX */
 	regmap_update_bits(priv->regmap, MT6359_DCXO_CW12,
 			   0x1 << RG_XO_AUDIO_EN_M_SFT,
 			   0x1 << RG_XO_AUDIO_EN_M_SFT);
@@ -7713,6 +7955,10 @@ static int mt6359_platform_driver_probe(struct platform_device *pdev)
 #endif
 	if (IS_ERR(priv->regmap))
 		return PTR_ERR(priv->regmap);
+
+#ifdef CONFIG_SND_SOC_DBMDX
+	mt6359_ep_regmap = priv->regmap;
+#endif
 
 #ifdef CONFIG_DEBUG_FS
 	/* create debugfs file */

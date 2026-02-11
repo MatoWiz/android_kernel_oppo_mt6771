@@ -76,10 +76,18 @@ static u8 read_data(u8 addr)
 	return get_byte;
 }
 
+#if 0
+static int s4DW9718TAF_ReadReg(unsigned short *a_pu2Result)
+{
+	*a_pu2Result = (read_data(0x02) << 8) + (read_data(0x03) & 0xff);
+
+	return 0;
+}
+#endif
+
 static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
-
 	char puSendCmd[3] = {0x02, (char)(a_u2Data >> 8),
 			     (char)(a_u2Data & 0xFF)};
 
@@ -112,7 +120,6 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 		stMotorInfo.bIsMotorOpen = 1;
 	else
 		stMotorInfo.bIsMotorOpen = 0;
-
 	if (copy_to_user(pstMotorInfo, &stMotorInfo,
 			 sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
@@ -136,6 +143,7 @@ static int initAF(void)
 		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+		mdelay(1);
 
 		if (i4RetValue < 0) {
 			LOG_INF("I2C send 0x00 failed!!\n");
@@ -178,7 +186,6 @@ static int initAF(void)
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
-
 	if (s4AF_WriteReg((unsigned short)a_u4Position) == 0) {
 		g_u4CurrPosition = a_u4Position;
 		ret = 0;
@@ -252,6 +259,26 @@ int DW9718TAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		int i4RetValue = 0;
 		u8 data = 0x0;
 		char puSendCmd[2] = {0x00, 0x01};
+		unsigned long af_step = 25;
+
+		if (g_u4CurrPosition > 0 && g_u4CurrPosition <= 1023) {
+			while (g_u4CurrPosition > 150) {
+				if (g_u4CurrPosition > 400)
+					af_step = 70;
+				else if (g_u4CurrPosition > 200)
+					af_step = 40;
+				else
+					af_step = 30;
+
+				if (s4AF_WriteReg(g_u4CurrPosition - af_step) != 0) {
+					break;
+				}
+				g_u4CurrPosition = g_u4CurrPosition - af_step;
+				mdelay(10);
+				if (g_u4CurrPosition <= 0 || g_u4CurrPosition > 1023)
+					break;
+			}
+		}
 
 		LOG_INF("apply\n");
 

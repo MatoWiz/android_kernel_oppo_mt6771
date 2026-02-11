@@ -82,6 +82,21 @@
 
 #define DDP_OUTPUT_LAYID 4
 
+#ifdef OPLUS_BUG_STABILITY
+#include <mt-plat/mtk_boot_common.h>
+extern unsigned long oplus_silence_mode;
+extern unsigned int oplus_fp_silence_mode;
+#endif /* OPLUS_BUG_STABILITY */
+
+/* #ifdef OPLUS_FEATURE_ONSCREENFINGERPRINT */
+/*
+ * modify for fingerprint notify frigger
+ */
+#include <linux/fb.h>
+extern bool oplus_fp_notify_up_delay;
+extern void fingerprint_send_notify(struct fb_info *fbi, uint8_t fingerprint_op_mode);
+/* #endif */ /* OPLUS_FEATURE_ONSCREENFINGERPRINT */
+
 #if defined(MTK_FB_SHARE_WDMA0_SUPPORT)
 static int idle_flag = 1;
 static int smartovl_flag;
@@ -937,6 +952,16 @@ static int do_frame_config(struct frame_queue_t *frame_node)
 		return -1;
 	}
 
+	/* #ifdef OPLUS_FEATURE_ONSCREENFINGERPRINT */
+	/*
+	* add for fingerprint notify frigger
+	*/
+	if (oplus_fp_notify_up_delay && ((cfg->hbm_en & 0x2) == 0)) {
+		oplus_fp_notify_up_delay = false;
+		fingerprint_send_notify(NULL, 0);
+	}
+	/* #endif */ /* OPLUS_FEATURE_ONSCREENFINGERPRINT */
+
 	return 0;
 }
 
@@ -1533,6 +1558,12 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return _ioctl_get_info(arg);
 	case DISP_IOCTL_GET_DISPLAY_CAPS:
 		return _ioctl_get_display_caps(arg);
+#ifdef VENDOR_EDIT
+	case DISP_IOCTL_GET_LCM_MODULE_INFO:
+		{
+			return _ioctl_get_lcm_module_info(arg);
+		}
+#endif /* VENDOR_EDIT */
 	case DISP_IOCTL_GET_VSYNC_FPS:
 		return _ioctl_get_vsync(arg);
 	case DISP_IOCTL_SET_VSYNC_FPS:
@@ -1783,6 +1814,16 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 	class_dev = (struct class_device *)device_create(mtk_disp_mgr_class,
 						NULL, mtk_disp_mgr_devno,
 						NULL, DISP_SESSION_DEVICE);
+
+	#ifdef OPLUS_BUG_STABILITY
+	if ((oppo_boot_mode == OPPO_SILENCE_BOOT)
+			||(get_boot_mode() == OPPO_SAU_BOOT)) {
+		printk("%s OPPO_SILENCE_BOOT set oplus_silence_mode to 1\n", __func__);
+		oplus_silence_mode = 1;
+		oplus_fp_silence_mode = 1;
+	}
+	#endif /* OPLUS_BUG_STABILITY */
+
 	disp_sync_init();
 
 	external_display_control_init();

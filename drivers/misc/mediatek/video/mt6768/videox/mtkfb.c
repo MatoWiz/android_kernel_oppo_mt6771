@@ -96,6 +96,9 @@ static bool no_update;
 static struct disp_session_input_config session_input;
 long dts_gpio_state;
 
+#ifdef OPLUS_BUG_STABILITY
+extern int __attribute((weak)) oplus_mtkfb_custom_data_init(struct platform_device *pdev) { return 0; };
+#endif /* OPLUS_BUG_STABILITY */
 
 /* macro definiton */
 #define ALIGN_TO(x, n)  (((x) + ((n) - 1)) & ~((n) - 1))
@@ -2520,11 +2523,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 	int init_state;
 	int r = 0;
 
-#ifdef CONFIG_MTK_IOMMU_V2
-	struct ion_client *ion_display_client = NULL;
-	struct ion_handle *ion_display_handle = NULL;
-	size_t temp_va = 0;
-#endif
 	/* struct platform_device *pdev; */
 
 	DISPMSG("%s name [%s]  = [%s][%p]\n", __func__,
@@ -2536,6 +2534,10 @@ static int mtkfb_probe(struct platform_device *pdev)
 			return -EPROBE_DEFER;
 		}
 	}
+
+	#ifdef OPLUS_BUG_STABILITY
+	oplus_mtkfb_custom_data_init(pdev);
+	#endif
 
 	_parse_tag_videolfb();
 
@@ -2562,34 +2564,8 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	DISPMSG("%s: fb_pa = %pa\n", __func__, &fb_base);
 
-#ifdef CONFIG_MTK_IOMMU_V2
-	temp_va = (size_t)ioremap_wc(fb_base,
-		(fb_base + vramsize - fb_base));
-	fbdev->fb_va_base = (void *)temp_va;
-	ion_display_client = disp_ion_create("disp_fb0");
-	if (ion_display_client == NULL) {
-		DISPERR("%s: fail to create ion\n", __func__);
-		r = -1;
-		goto cleanup;
-	}
-
-	ion_display_handle = disp_ion_alloc(ion_display_client,
-		ION_HEAP_MULTIMEDIA_PA2MVA_MASK, fb_base,
-		(fb_base + vramsize - fb_base));
-	if (r != 0) {
-		DISPERR("%s: fail to allocate buffer\n", __func__);
-		r = -1;
-		goto cleanup;
-	}
-
-	disp_ion_get_mva(ion_display_client,
-		ion_display_handle,
-		&fb_pa, 0,
-		DISP_M4U_PORT_DISP_OVL0);
-#else
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 		(unsigned long *)(&fbdev->fb_va_base), &fb_pa);
-#endif
 	fbdev->fb_pa_base = fb_base;
 
 	primary_display_set_frame_buffer_address(
@@ -2682,13 +2658,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
 
-
-	/* this function will get fb_heap base address to ion
-	 * for management frame buffer
-	 */
-#ifdef MTK_FB_ION_SUPPORT
-	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
-#endif
 	fbdev->state = MTKFB_ACTIVE;
 
 	if (!strcmp(mtkfb_find_lcm_driver(),

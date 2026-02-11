@@ -98,7 +98,7 @@ static int EEPROM_set_i2c_bus(unsigned int deviceID,
 		return -EFAULT;
 
 	client = g_pstI2Cclients[i2c_idx];
-	pr_debug("%s end! deviceID=%d index=%u client=%p\n",
+	pr_info("%s end! deviceID=%d index=%u client=%p\n",
 		 __func__, deviceID, idx, client);
 
 	if (client == NULL) {
@@ -128,7 +128,7 @@ static int EEPROM_get_cmd_info(unsigned int sensorID,
 
 	cam_cal_get_sensor_list(&pCamCalList);
 	if (pCamCalList != NULL) {
-		pr_debug("pCamCalList!=NULL && pCamCalFunc!= NULL\n");
+		pr_info("pCamCalList!=NULL && pCamCalFunc!= NULL\n");
 		for (i = 0; pCamCalList[i].sensorID != 0; i++) {
 			if (pCamCalList[i].sensorID == sensorID) {
 				pr_debug("pCamCalList[%d].sensorID==%x\n", i,
@@ -174,14 +174,14 @@ static struct stCAM_CAL_CMD_INFO_STRUCT *EEPROM_get_cmd_info_ex
 		for (i = 0; i < IMGSENSOR_SENSOR_IDX_MAX_NUM; i++) {
 			/* To Set Client */
 			if (g_camCalDrvInfo[i].sensorID == 0) {
-				pr_debug("Start get_cmd_info!\n");
+				pr_info("Start get_cmd_info!\n");
 				EEPROM_get_cmd_info(sensorID,
 					&g_camCalDrvInfo[i]);
 
 				if (g_camCalDrvInfo[i].readCMDFunc != NULL) {
 					g_camCalDrvInfo[i].sensorID = sensorID;
 					g_camCalDrvInfo[i].deviceID = deviceID;
-					pr_debug("deviceID=%d, SensorID=%x\n",
+					pr_info("deviceID=%d, SensorID=%x\n",
 						deviceID, sensorID);
 				}
 				break;
@@ -657,14 +657,14 @@ static long EEPROM_drv_ioctl(struct file *file,
 		break;
 
 	case CAM_CALIOC_G_READ:
-		pr_debug("CAM_CALIOC_G_READ start! offset=%d, length=%d\n",
+		pr_info("CAM_CALIOC_G_READ start! offset=%d, length=%d\n",
 			ptempbuf->u4Offset, ptempbuf->u4Length);
 
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
 
-		pr_debug("SensorID=%x DeviceID=%x\n",
+		pr_info("SensorID=%x DeviceID=%x\n",
 			ptempbuf->sensorID, ptempbuf->deviceID);
 		pcmdInf = EEPROM_get_cmd_info_ex(
 			ptempbuf->sensorID,
@@ -745,7 +745,7 @@ static int EEPROM_drv_open(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	int ret = 0;
 
-	pr_debug("%s start\n", __func__);
+	pr_info("%s start\n", __func__);
 	spin_lock(&g_spinLock);
 	if (g_drvOpened) {
 		spin_unlock(&g_spinLock);

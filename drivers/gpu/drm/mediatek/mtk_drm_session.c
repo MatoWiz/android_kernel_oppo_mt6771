@@ -22,6 +22,10 @@
 
 static DEFINE_MUTEX(disp_session_lock);
 
+#ifdef OPLUS_BUG_STABILITY
+int mtk_drm_session_created = 0;
+#endif /* OPLUS_BUG_STABILITY */
+
 int mtk_drm_session_create(struct drm_device *dev,
 			   struct drm_mtk_session *config)
 {
@@ -83,7 +87,6 @@ done:
 		private->vds_path_switch_dirty = 1;
 		private->vds_path_switch_done = 0;
 		private->vds_path_enable = 0;
-		private->need_vds_path_switch_back = 0;
 
 		DDPMSG("Switch vds: crtc2 vds session create\n");
 		/* Close RPO */
@@ -187,7 +190,13 @@ int mtk_session_set_mode(struct drm_device *dev, unsigned int session_mode)
 					private->crtc[i],
 					mode_tb[session_mode].ddp_mode[i], 1);
 		}
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+		/* For wfd secure region */
+		DDPINFO("Switch WFD: display call m4u_sec_init\n");
+		m4u_sec_init();
+#endif
 	}
+
 	private->session_mode = session_mode;
 	DRM_MMP_EVENT_END(set_mode, private->session_mode,
 			session_mode);
@@ -257,6 +266,10 @@ int mtk_drm_session_create_ioctl(struct drm_device *dev, void *data,
 
 	if (mtk_drm_session_create(dev, config) != 0)
 		ret = -EFAULT;
+
+	#ifdef OPLUS_BUG_STABILITY
+	mtk_drm_session_created = 1;
+	#endif /* OPLUS_BUG_STABILITY */
 
 	return ret;
 }

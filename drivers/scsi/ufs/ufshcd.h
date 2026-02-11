@@ -252,6 +252,9 @@ struct ufs_desc_size {
 	int interc_desc;
 	int unit_desc;
 	int conf_desc;
+#ifdef VENDOR_EDIT
+	int hlth_desc;
+#endif
 };
 
 /**
@@ -592,6 +595,34 @@ enum ufs_crypto_state {
 	UFS_CRYPTO_HW_FBE_ENCRYPTED   = (1 << 3),
 };
 
+#ifdef OPLUS_FEATURE_MIDAS
+struct ufs_transmission_status_t
+{
+	u8  transmission_status_enable;
+
+	u64 gear_min_write_sec;
+	u64 gear_max_write_sec;
+	u64 gear_min_read_sec;
+	u64 gear_max_read_sec;
+
+	u64 gear_min_write_us;
+	u64 gear_max_write_us;
+	u64 gear_min_read_us;
+	u64 gear_max_read_us;
+
+	u64 gear_min_dev_us;
+	u64 gear_max_dev_us;
+
+	u64 gear_min_other_sec;
+	u64 gear_max_other_sec;
+	u64 gear_min_other_us;
+	u64 gear_max_other_us;
+
+	u64 scsi_send_count;
+	u64 dev_cmd_count;
+};
+#endif /*OPLUS_FEATURE_MIDAS*/
+
 /**
  * struct ufs_hba - per adapter private structure
  * @mmio_base: UFSHCI base register address
@@ -880,7 +911,10 @@ struct ufs_hba {
 
 	struct rw_semaphore clk_scaling_lock;
 	struct ufs_desc_size desc_size;
-
+#ifdef VENDOR_EDIT
+	int latency_hist_enabled;
+	struct io_latency_state io_lat_s;
+#endif
 	/* MTK PATCH */
 	/* record vendor id for vendor-specific configurations */
 	u32 manu_id;
@@ -938,6 +972,11 @@ struct ufs_hba {
 	struct keyslot_manager *ksm;
 	void *crypto_DO_NOT_USE[8];
 #endif /* CONFIG_SCSI_UFS_CRYPTO */
+
+#ifdef OPLUS_FEATURE_MIDAS
+	struct ufs_transmission_status_t ufs_transmission_status;
+	struct device_attribute ufs_transmission_status_attr;
+#endif
 };
 
 /* MTK PATCH */

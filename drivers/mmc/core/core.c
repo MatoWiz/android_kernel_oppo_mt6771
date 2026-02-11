@@ -1062,6 +1062,15 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 {
 	int err;
 
+#ifdef OPLUS_FEATURE_MMC_DRIVER
+	if (host->card_stuck_in_programing_status && (mrq->req) && (REQ_OP_WRITE == req_op(mrq->req))) {
+		pr_err("%s: card stuck in programing status\n", mmc_hostname(host));
+		mrq->cmd->error = -EIO;
+		mmc_request_done(host, mrq);
+		return;
+	}
+#endif
+
 	/* Assumes host controller has been runtime resumed by mmc_claim_host */
 	err = mmc_retune(host);
 	if (err) {

@@ -103,6 +103,9 @@ struct esd_check_item {
 enum MTK_PANEL_MODE_SWITCH_STAGE {
 	BEFORE_DSI_POWERDOWN,
 	AFTER_DSI_POWERON,
+	//#ifdef OPLUS_BUG_STABILITY
+	AFTER_CHANGE_DATARATE,
+	//#endif
 };
 
 enum MIPITX_PHY_PORT {
@@ -245,6 +248,12 @@ struct mtk_panel_params {
 	unsigned int lcm_index;
 	unsigned int wait_sof_before_dec_vfp;
 	unsigned int doze_delay;
+	/* #ifdef OPLUS_BUG_STABILITY */
+	unsigned int oplus_panel_cv_switch;
+	unsigned int oplus_lpx_ns_multiplier;
+	unsigned int oplus_dc_then_hbm_on;
+	unsigned int tp_lcd_suspend;
+	/* #endif */ /* OPLUS_BUG_STABILITY */
 };
 
 struct mtk_panel_ext {
@@ -275,6 +284,15 @@ struct mtk_panel_funcs {
 		unsigned int dst_mode, enum MTK_PANEL_MODE_SWITCH_STAGE stage);
 	int (*get_virtual_heigh)(void);
 	int (*get_virtual_width)(void);
+	int (*esd_backlight_recovery)(void *dsi_drv, dcs_write_gce cb,
+		void *handle);
+	//#ifdef VENDOR_EDIT
+	int (*panel_poweroff)(struct drm_panel *panel);
+	int (*panel_poweron)(struct drm_panel *panel);
+	void (*hbm_set_state)(struct drm_panel *panel, bool state);
+	int (*set_hbm)(void *dsi_drv, dcs_write_gce cb,
+		void *handle, unsigned int hbm_mode);
+	//#endif
 	/**
 	 * @doze_enable_start:
 	 *
@@ -319,6 +337,25 @@ struct mtk_panel_funcs {
 	int (*doze_area)(struct drm_panel *panel,
 		void *dsi_drv, dcs_write_gce cb, void *handle);
 
+	/* #ifdef OPLUS_FEATURE_AOD */
+	/**
+	 * @doze_area_setting:
+	 *
+	 * Send the panel area in command here.
+	 */
+	int (*doze_area_set)(void *dsi, dcs_write_gce cb, void *handle);
+	/* #endif */ /* OPLUS_FEATURE_AOD */
+
+	/* #ifdef OPLUS_BUG_STABILITY */
+	int (*doze_enable_end)(struct drm_panel *panel,
+		void *dsi_drv, dcs_write_gce cb, void *handle);
+	int (*doze_post_disp_off)(struct drm_panel *panel,
+		void *dsi_drv, dcs_write_gce cb, void *handle);
+	int (*set_safe_mode)(void *dsi_drv, dcs_write_gce cb,
+		void *handle, unsigned int level);
+	int (*panel_disp_off)(void *dsi, dcs_write_gce cb, void *handle);
+	/* #endif */ /* OPLUS_BUG_STABILITY */
+
 	/**
 	 * @doze_get_mode_flags:
 	 *
@@ -333,6 +370,17 @@ struct mtk_panel_funcs {
 	void (*hbm_get_state)(struct drm_panel *panel, bool *state);
 	void (*hbm_get_wait_state)(struct drm_panel *panel, bool *wait);
 	bool (*hbm_set_wait_state)(struct drm_panel *panel, bool wait);
+	int (*esd_backlight_check)(void *dsi_drv, dcs_write_gce cb,
+		void *handle);
+	int (*oplus_get_aod_state)(void);
+	int (*post_disp_on)(void *dsi_drv, dcs_write_gce cb, void *handle);
+	#ifdef OPLUS_BUG_STABILITY
+	int (*set_dc_backlight)(void *dsi_drv, dcs_write_gce cb,
+		void *handle, unsigned int level);
+	void (*cabc_switch)(void *dsi_drv, dcs_write_gce cb,
+			void *handle, unsigned int cabc_mode);
+	int (*nt_reset)(struct drm_panel *panel, int on);
+	#endif /* OPLUS_BUG_STABILITY */
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);

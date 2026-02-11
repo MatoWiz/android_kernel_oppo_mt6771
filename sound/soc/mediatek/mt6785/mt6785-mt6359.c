@@ -116,6 +116,90 @@ static const struct soc_enum mt6785_spk_type_enum[] = {
 			    mt6785_spk_i2s_type_str),
 };
 
+#ifdef OPLUS_BUG_STABILITY
+#ifdef CONFIG_SND_SOC_AW87339
+extern unsigned char aw87339_audio_kspk(void);
+extern unsigned char aw87339_audio_drcv(void);
+extern unsigned char aw87339_audio_off(void);
+extern unsigned char aw87339_audio_voicespk(void);
+
+enum {
+	SPEAKER_SCENE_PLAYBACK = 0,
+	SPEAKER_SCENE_VOICE,
+	SPEAKER_SCENE_NUM
+};
+static int aw87339_speaker_scene = SPEAKER_SCENE_PLAYBACK;
+static const char *const aw87339_spk_scene[] = { "Playback", "Voice" };
+static const struct soc_enum aw87339_spk_scene_enum =
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(aw87339_spk_scene), aw87339_spk_scene);
+
+static int aw87339_spk_scene_get(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s() = %d\n", __func__, aw87339_speaker_scene);
+	ucontrol->value.integer.value[0] = aw87339_speaker_scene;
+	return 0;
+}
+
+static int aw87339_spk_scene_set(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s: ucontrol = %ld\n", __func__, ucontrol->value.integer.value[0]);
+
+	if(SPEAKER_SCENE_NUM <= ucontrol->value.integer.value[0]) {
+		aw87339_speaker_scene = SPEAKER_SCENE_PLAYBACK;
+		pr_err("%s(): set speaker scene val = %ld !!! \r\n", __func__, ucontrol->value.integer.value[0]);
+	} else {
+		aw87339_speaker_scene = ucontrol->value.integer.value[0];
+	}
+
+	return 0;
+}
+#endif
+#ifdef CONFIG_SND_SOC_AW87359
+extern unsigned char aw87359_audio_dspk(void);
+extern unsigned char aw87359_audio_drcv(void);
+extern unsigned char aw87359_audio_abspk(void);
+extern unsigned char aw87359_audio_dspk_ftm(void);
+extern unsigned char aw87359_audio_off(void);
+
+enum {
+	SPEAKER_SCENE_NORMAL = 0,
+	SPEAKER_SCENE_FTM,
+	SPEAKER_SCENE_N
+};
+
+static int aw87359_speaker_scene = SPEAKER_SCENE_NORMAL;
+static const char *const aw87359_spk_scene[] = { "Normal", "FTM" };
+static const struct soc_enum aw87359_spk_scene_enum =
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(aw87359_spk_scene), aw87359_spk_scene);
+
+static int aw87359_spk_scene_get(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s() = %d\n", __func__, aw87359_speaker_scene);
+	ucontrol->value.integer.value[0] = aw87359_speaker_scene;
+	return 0;
+}
+
+static int aw87359_spk_scene_set(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s: ucontrol = %ld\n", __func__, ucontrol->value.integer.value[0]);
+
+	if(SPEAKER_SCENE_N <= ucontrol->value.integer.value[0]) {
+		aw87359_speaker_scene = SPEAKER_SCENE_NORMAL;
+		pr_err("%s(): set speaker scene val = %ld !!! \n", __func__, ucontrol->value.integer.value[0]);
+	} else {
+		aw87359_speaker_scene = ucontrol->value.integer.value[0];
+	}
+
+	return 0;
+}
+
+#endif
+#endif /* OPLUS_BUG_STABILITY */
+
 static int mt6785_spk_type_get(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
@@ -158,9 +242,37 @@ static int mt6785_mt6359_spk_amp_event(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		/* spk amp on control */
+		#ifdef OPLUS_BUG_STABILITY
+		#ifdef CONFIG_SND_SOC_AW87339
+		if(aw87339_speaker_scene == SPEAKER_SCENE_PLAYBACK)
+			aw87339_audio_kspk();
+		else if(aw87339_speaker_scene == SPEAKER_SCENE_VOICE)
+			aw87339_audio_voicespk();
+		else
+			aw87339_audio_kspk();
+		#endif
+
+		#ifdef CONFIG_SND_SOC_AW87359
+		if(aw87359_speaker_scene == SPEAKER_SCENE_NORMAL)
+			aw87359_audio_dspk();
+		else if(aw87359_speaker_scene == SPEAKER_SCENE_FTM)
+			aw87359_audio_dspk_ftm();
+		else
+			aw87359_audio_dspk();
+		#endif
+		#endif /* OPLUS_BUG_STABILITY */
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		/* spk amp off control */
+		#ifdef OPLUS_BUG_STABILITY
+		#ifdef CONFIG_SND_SOC_AW87339
+		aw87339_audio_off();
+		#endif
+
+		#ifdef CONFIG_SND_SOC_AW87359
+		aw87359_audio_off();
+		#endif
+		#endif /* OPLUS_BUG_STABILITY */
 		break;
 	default:
 		break;
@@ -230,6 +342,12 @@ static const struct snd_kcontrol_new mt6785_mt6359_controls[] = {
 		     mt6785_spk_i2s_out_type_get, NULL),
 	SOC_ENUM_EXT("MTK_SPK_I2S_IN_TYPE_GET", mt6785_spk_type_enum[1],
 		     mt6785_spk_i2s_in_type_get, NULL),
+#ifdef OPLUS_BUG_STABILITY
+	SOC_ENUM_EXT("AW87339 Spk Scene", aw87339_spk_scene_enum,
+			aw87339_spk_scene_get, aw87339_spk_scene_set),
+       SOC_ENUM_EXT("AW87359 Spk Scene", aw87359_spk_scene_enum,
+			aw87359_spk_scene_get, aw87359_spk_scene_set),
+#endif /* OPLUS_BUG_STABILITY */
 };
 
 /*

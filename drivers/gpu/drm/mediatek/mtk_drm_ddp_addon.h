@@ -23,6 +23,7 @@ enum addon_scenario {
 	NONE,
 	ONE_SCALING,
 	TWO_SCALING,
+	WDMA_READ_BACK,
 	GAME_PQ,
 	VP_PQ,
 	TRIPLE_DISP,
@@ -32,6 +33,7 @@ enum addon_scenario {
 enum addon_module {
 	DISP_RSZ,
 	DISP_RSZ_v2,
+	DISP_WDMA,
 	DMDP_PQ_WITH_RDMA,
 	ADDON_MODULE_NUM,
 };
@@ -39,6 +41,7 @@ enum addon_module {
 enum addon_type {
 	ADDON_BETWEEN,
 	ADDON_BEFORE,
+	ADDON_AFTER,
 };
 
 struct mtk_lye_ddp_state {
@@ -76,9 +79,18 @@ struct mtk_addon_rsz_config {
 	uint8_t lc_tgt_layer;
 };
 
+struct mtk_addon_wdma_config {
+	struct mtk_addon_config_type config_type;
+	struct mtk_rect wdma_src_roi;
+	struct mtk_rect wdma_dst_roi;
+	struct golden_setting_context *p_golden_setting_context;
+	unsigned int buf_index;
+};
+
 union mtk_addon_config {
 	struct mtk_addon_config_type config_type;
 	struct mtk_addon_rsz_config addon_rsz_config;
+	struct mtk_addon_wdma_config addon_wdma_config;
 };
 
 const struct mtk_addon_path_data *
@@ -100,6 +112,14 @@ void mtk_addon_connect_before(struct drm_crtc *crtc, unsigned int ddp_mode,
 			      union mtk_addon_config *addon_config,
 			      struct cmdq_pkt *cmdq_handle);
 void mtk_addon_disconnect_before(
+	struct drm_crtc *crtc, unsigned int ddp_mode,
+	const struct mtk_addon_module_data *module_data,
+	union mtk_addon_config *addon_config, struct cmdq_pkt *cmdq_handle);
+void mtk_addon_connect_after(struct drm_crtc *crtc, unsigned int ddp_mode,
+			      const struct mtk_addon_module_data *module_data,
+			      union mtk_addon_config *addon_config,
+			      struct cmdq_pkt *cmdq_handle);
+void mtk_addon_disconnect_after(
 	struct drm_crtc *crtc, unsigned int ddp_mode,
 	const struct mtk_addon_module_data *module_data,
 	union mtk_addon_config *addon_config, struct cmdq_pkt *cmdq_handle);

@@ -32,6 +32,9 @@
 #define VIB_DEVICE				"mtk_vibrator"
 #define VIB_TAG                                 "[vibrator]"
 
+#define DEFAULT_MIN_LIMIT 15
+
+
 struct mt_vibr {
 	struct workqueue_struct *vibr_queue;
 	struct work_struct vibr_work;
@@ -42,6 +45,10 @@ struct mt_vibr {
 	spinlock_t vibr_lock;
 	atomic_t vibr_state;
 };
+
+#ifdef OPLUS_FEATURE_CHG_BASIC
+static bool vibr_not_disable = false;
+#endif /*VENDOR_EDIT*/
 
 static struct mt_vibr *g_mt_vib;
 
@@ -114,6 +121,9 @@ static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
 	struct mt_vibr *vibr = container_of(timer, struct mt_vibr, vibr_timer);
 
 	atomic_set(&vibr->vibr_state, 0);
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	vibr_not_disable = false;
+#endif
 	queue_work(vibr->vibr_queue, &vibr->vibr_work);
 	return HRTIMER_NORESTART;
 }
@@ -143,6 +153,19 @@ static ssize_t vibr_activate_store(struct device *dev,
 		return ret;
 	}
 	dur = atomic_read(&g_mt_vib->vibr_dur);
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	//if (vibr->vibr_dur < vibr->vibr_conf.min_limit)
+	if (dur < DEFAULT_MIN_LIMIT)
+	{
+		if (activate) {
+			vibr_not_disable = true;
+		}
+		else if (vibr_not_disable) {
+			ret = size;
+			return ret;
+		}
+	}
+#endif
 	vibrator_enable(dur, activate);
 	ret = size;
 	return ret;

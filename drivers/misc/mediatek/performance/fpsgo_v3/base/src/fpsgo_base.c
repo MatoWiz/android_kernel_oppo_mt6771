@@ -103,10 +103,17 @@ static int fpsgo_update_tracemark(void)
 	return 1;
 }
 
+static noinline int tracing_mark_write(const char *buf)
+{
+	trace_printk(buf);
+	return 0;
+}
+
 void __fpsgo_systrace_c(pid_t pid, unsigned long long bufID,
 	int val, const char *fmt, ...)
 {
 	char log[256];
+	char buf2[256];
 	va_list args;
 	int len;
 
@@ -124,20 +131,19 @@ void __fpsgo_systrace_c(pid_t pid, unsigned long long bufID,
 		log[255] = '\0';
 
 	if (!bufID) {
-		preempt_disable();
-		event_trace_printk(mark_addr, "C|%d|%s|%d\n", pid, log, val);
-		preempt_enable();
+		snprintf(buf2, sizeof(buf2), "C|%d|%s|%d\n", pid, log, val);
+		tracing_mark_write(buf2);
 	} else {
-		preempt_disable();
-		event_trace_printk(mark_addr, "C|%d|%s|%d|0x%llx\n",
+		snprintf(buf2, sizeof(buf2), "C|%d|%s|%d|0x%llx\n",
 			pid, log, val, bufID);
-		preempt_enable();
+		tracing_mark_write(buf2);
 	}
 }
 
 void __fpsgo_systrace_b(pid_t tgid, const char *fmt, ...)
 {
 	char log[256];
+	char buf2[256];
 	va_list args;
 	int len;
 
@@ -153,20 +159,17 @@ void __fpsgo_systrace_b(pid_t tgid, const char *fmt, ...)
 		return;
 	else if (unlikely(len == 256))
 		log[255] = '\0';
-
-	preempt_disable();
-	event_trace_printk(mark_addr, "B|%d|%s\n", tgid, log);
-	preempt_enable();
+	snprintf(buf2, sizeof(buf2), "B|%d|%s\n", tgid, log);
+	tracing_mark_write(buf2);
 }
 
 void __fpsgo_systrace_e(void)
 {
+	char buf2[256];
 	if (unlikely(!fpsgo_update_tracemark()))
 		return;
-
-	preempt_disable();
-	event_trace_printk(mark_addr, "E\n");
-	preempt_enable();
+	snprintf(buf2, sizeof(buf2), "E\n");
+	tracing_mark_write(buf2);
 }
 
 void fpsgo_main_trace(const char *fmt, ...)
@@ -373,6 +376,9 @@ void fpsgo_delete_render_info(int pid,
 	struct render_info *data;
 	int delete = 0;
 	int check_max_blc = 0;
+	int max_pid = 0;
+	unsigned long long max_buffer_id = 0;
+	int max_ret;
 
 	fpsgo_lockprove(__func__);
 
@@ -382,8 +388,8 @@ void fpsgo_delete_render_info(int pid,
 		return;
 
 	fpsgo_thread_lock(&data->thr_mlock);
-	if (pid == fpsgo_base2fbt_get_max_blc_pid() &&
-			buffer_id == fpsgo_base2fbt_get_max_blc_buffer_id())
+	max_ret = fpsgo_base2fbt_get_max_blc_pid(&max_pid, &max_buffer_id);
+	if (max_ret && pid == max_pid && buffer_id == max_buffer_id)
 		check_max_blc = 1;
 
 	rb_erase(&data->render_key_node, &render_pid_tree);
@@ -517,8 +523,7 @@ void fpsgo_check_thread_status(void)
 	expire_ts = ts - TIME_1S;
 
 	fpsgo_render_tree_lock(__func__);
-	temp_max_pid = fpsgo_base2fbt_get_max_blc_pid();
-	temp_max_bufid = fpsgo_base2fbt_get_max_blc_buffer_id();
+	fpsgo_base2fbt_get_max_blc_pid(&temp_max_pid, &temp_max_bufid);
 
 	n = rb_first(&render_pid_tree);
 	while (n) {

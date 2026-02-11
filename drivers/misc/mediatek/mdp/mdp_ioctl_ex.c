@@ -155,6 +155,48 @@ static u64 alloc_slot[SLOT_GROUP_NUM];
 static u64 alloc_slot_group;
 static DEFINE_MUTEX(rb_slot_list_mutex);
 
+#define THREAD_NAME_MAX 20
+static char alloc_slot_thread[64 * SLOT_GROUP_NUM][THREAD_NAME_MAX];
+static void oplus_dump_alloc_slot_thread(void)
+{
+	int i = 0;
+
+	CMDQ_ERR("dump all alloc slot thread begin\n");
+	for (i = 0; i < 64 * SLOT_GROUP_NUM; i = i + 8) {
+		CMDQ_ERR("[%d-%d][%s][%s][%s][%s][%s][%s][%s][%s]\n", i, i + 7,
+			alloc_slot_thread[i], alloc_slot_thread[i + 1],
+			alloc_slot_thread[i + 2], alloc_slot_thread[i + 3],
+			alloc_slot_thread[i + 4],alloc_slot_thread[i + 5],
+			alloc_slot_thread[i + 6],alloc_slot_thread[i + 7]);
+	}
+	CMDQ_ERR("dump all alloc slot thread end\n");
+}
+
+static void oplus_save_alloc_slot_thread(unsigned int id)
+{
+	if (id >= 64 * SLOT_GROUP_NUM) {
+		CMDQ_ERR("invalid slot id in %s\n", __func__);
+		return;
+	}
+
+	CMDQ_MSG("oplus_save_alloc_slot_thread id:%d %d:%s\n", id, current->pid, current->comm);
+	snprintf(alloc_slot_thread[id], THREAD_NAME_MAX, "%d:%s", current->pid, current->comm);
+	return;
+}
+
+static void oplus_clear_alloc_slot_thread(unsigned int id)
+{
+	if (id >= 64 * SLOT_GROUP_NUM) {
+		CMDQ_ERR("invalid slot id in %s\n", __func__);
+		return;
+	}
+
+	CMDQ_MSG("oplus_free_alloc_slot_thread id:%d\n", id);
+	//clear it
+	memset(alloc_slot_thread[id], 0 , THREAD_NAME_MAX);
+	return;
+}
+
 static dma_addr_t translate_read_id_ex(u32 read_id, u32 *slot_offset)
 {
 	u32 slot_id;
@@ -864,6 +906,7 @@ s32 mdp_ioctl_alloc_readback_slots(void *fp, unsigned long param)
 	free_slot_group = ffz(alloc_slot_group);
 	if (unlikely(alloc_slot_group == ~0UL)) {
 		CMDQ_ERR("%s no free slot:%#llx\n", __func__, alloc_slot_group);
+		oplus_dump_alloc_slot_thread();
 		cmdq_free_write_addr(paStart, CMDQ_CLT_MDP);
 		mutex_unlock(&rb_slot_list_mutex);
 		return -ENOMEM;
@@ -889,6 +932,7 @@ s32 mdp_ioctl_alloc_readback_slots(void *fp, unsigned long param)
 		&paStart, alloc_slot_index, fp);
 	CMDQ_MSG("%s alloc slot[%d] %#llx, %#llx\n", __func__, free_slot_group,
 		alloc_slot[free_slot_group], alloc_slot_group);
+	oplus_save_alloc_slot_thread(alloc_slot_index);
 	mutex_unlock(&rb_slot_list_mutex);
 
 	rb_req.start_id = alloc_slot_index << SLOT_ID_SHIFT;
@@ -960,6 +1004,7 @@ s32 mdp_ioctl_free_readback_slots(void *fp, unsigned long param)
 	rb_slot[free_slot_index].fp = NULL;
 	CMDQ_MSG("%s alloc slot[%d] %#llx, %#llx\n", __func__, free_slot_group,
 		alloc_slot[free_slot_group], alloc_slot_group);
+	oplus_clear_alloc_slot_thread(free_slot_index);
 	mutex_unlock(&rb_slot_list_mutex);
 
 	return cmdq_free_write_addr(paStart, CMDQ_CLT_MDP);

@@ -30,6 +30,9 @@
 /* such as DPI0, DSI0/1 */
 /* static struct disp_lcm_handle _disp_lcm_driver[MAX_LCM_NUMBER]; */
 
+#ifdef OPLUS_BUG_STABILITY
+extern bool __attribute((weak)) oplus_display_twelvebits_support;
+#endif
 int _lcm_count(void)
 {
 	return lcm_count;
@@ -1028,6 +1031,8 @@ void load_lcm_resources_from_DT(struct LCM_DRIVER *lcm_drv)
 }
 #endif
 
+int tp_gesture = 0;
+EXPORT_SYMBOL(tp_gesture);
 struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 	enum LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
@@ -1503,10 +1508,123 @@ int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps)
 	DISPERR("lcm not initialied\n");
 	return -1;
 }
+#ifdef OPLUS_BUG_STABILITY
+#define BRIGHT_BL_X	2047
+#define BRIGHT_BL_Y	3562
+#define BRIGHT_BL_BIGGER_Y	3343
+#define BRIGHT_BL_X1	2
+#define BRIGHT_BL_Y1	16
+#define BRIGHT_MAX 4095
+#define BRIGHT_MIN 2048
+#define BL_MAX 4095
+#define BL_MIN 3562
+#define BL_BIGGER_MIN 3343
+#define VALUE_MASK 1000000
+#define OPLUS_BRIGHT_TO_BL(out, v, BL_MIN, BL_MAX, BRIGHT_MIN,BRIGHT_MAX) do { \
+                    out = (((int)BL_MAX - (int)BL_MIN)*v + \
+                    ((int)BRIGHT_MAX*(int)BL_MIN -(int)BRIGHT_MIN*(int)BL_MAX)) \
+                    /((int)BRIGHT_MAX - (int)BRIGHT_MIN); \
+                    } while (0)
+#define OPLUS_BRIGHT_TO_BL_BIGGER(out, v, BL_BIGGER_MIN, BL_MAX, BRIGHT_MIN,BRIGHT_MAX) do { \
+                    out = (((int)BL_MAX - (int)BL_BIGGER_MIN)*v + \
+                    ((int)BRIGHT_MAX*(int)BL_BIGGER_MIN -(int)BRIGHT_MIN*(int)BL_MAX)) \
+                    /((int)BRIGHT_MAX - (int)BRIGHT_MIN); \
+                    } while (0)
+
+static unsigned int oplus_private_set_backlight(unsigned int level)
+{
+	unsigned int value_a = 846;
+	unsigned int value_b = 15996616;
+	unsigned int level_temp;
+	if(oplus_display_twelvebits_support) {
+		value_a = 794;
+		value_b = 15996824;
+	}
+	if (level > 0) {
+	if ( level < 2048) {
+		level_temp = (value_a * level * level  + value_b) / VALUE_MASK;
+		pr_err("check brightness level_temp == %u \n",level_temp);
+		if (level_temp < 16) {
+			level_temp = 16;
+			pr_err("min brightness level_temp < 16 , level_temp == %u \n",level_temp);
+			return level_temp;
+		}
+		return level_temp;
+	} else if ( (level < 4096) && (level >= 2048) ) {
+		if (oplus_display_twelvebits_support)
+			OPLUS_BRIGHT_TO_BL_BIGGER(level_temp, level, BL_BIGGER_MIN, BL_MAX, BRIGHT_MIN,BRIGHT_MAX);
+		else
+			OPLUS_BRIGHT_TO_BL(level_temp, level, BL_MIN, BL_MAX, BRIGHT_MIN,BRIGHT_MAX);
+		pr_err("check brightness level_temp == %u \n",level_temp);
+		return level_temp;
+        }
+	} else if (0 == level) {
+		level_temp = level;
+	} else {
+		DISPERR("check brightness level fail level > 4095, level==%u ",level);
+		level_temp = level;
+	}
+	return level_temp;
+}
+
+	/* This maps android backlight level 0 to 2047 into
+	 * driver backlight level 0 to bl_max with rounding
+	 */
+static int backlight_remapping_into_tddic_reg(struct disp_lcm_handle *plcm, int level_brightness){
+
+	int level_temp, value_a, value_b;
+	int level;
+	struct LCM_PARAMS *lcm_params = NULL;
+	lcm_params = plcm->params;
+	level = level_brightness;
+	if ( level > 0) {
+
+		if (lcm_params->blmap){
+			if (level%32 > 0)
+				level_temp = level/32 + 1;
+			else
+				level_temp = level/32;
+
+			level_temp = level_temp - 1;
+			if((level_temp*2 + 1) > lcm_params->blmap_size){
+				DISPERR(" %s android brightness level is more than 2047 or LCM blmap_size is setting short than 128 = %d\n", __func__, lcm_params->blmap_size);
+				return 0;
+			}
+			value_a = lcm_params->blmap[level_temp*2];
+			value_b = lcm_params->blmap[level_temp*2 + 1];
+			if (level <= 383)
+				level = value_a*level/100 + value_b;
+			else
+				level = value_a*level/100 - value_b;
+		pr_debug(" level_brightness=%d ,value_a= %d ,value_b=%d,level=%d \n",level_brightness, value_a,value_b,level);
+			if (level < 0){
+				DISPERR(" %s backlight value had been converted into a minus type = %d\n", __func__, level);
+				return 0;
+			}
+		}
+		if (level < lcm_params->brightness_min)
+			level = lcm_params->brightness_min;
+		if (level > lcm_params->brightness_max)
+			level = lcm_params->brightness_max;
+		return level;
+	} else if (level == 0){
+		return 0;
+	} else {
+		DISPERR(" %s android brightness level is error = %d\n", __func__, level);
+		return 0;
+	}
+}
+#endif
+#ifdef OPLUS_BUG_STABILITY
+ unsigned int g_lcd_backlight=0;
+#endif
 
 int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	void *handle, int level)
 {
+	#ifdef OPLUS_BUG_STABILITY
+	int level_temp;
+	#endif /* OPLUS_BUG_STABILITY */
 	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
@@ -1517,7 +1635,17 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 
 	lcm_drv = plcm->drv;
 	if (lcm_drv->set_backlight_cmdq) {
-		lcm_drv->set_backlight_cmdq(handle, level);
+		#ifdef OPLUS_BUG_STABILITY
+		if (oplus_display_twelvebits_support) {
+			level_temp = oplus_private_set_backlight(level);
+		} else {
+			level_temp = backlight_remapping_into_tddic_reg(plcm, level);
+		}
+			g_lcd_backlight=level;
+			lcm_drv->set_backlight_cmdq(handle, level_temp);
+		#else
+			lcm_drv->set_backlight_cmdq(handle, level);
+		#endif
 	} else {
 		DISPERR("FATAL ERROR, lcm_drv->set_backlight is null\n");
 		return -1;
@@ -1653,6 +1781,29 @@ int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle,
 	DISPERR("lcm_drv is null\n");
 	return -1;
 }
+
+#ifdef OPLUS_BUG_STABILITY
+int disp_lcm_oplus_set_lcm_cabc_cmd(struct disp_lcm_handle *plcm, void *handle, unsigned int level)
+{
+	struct LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_cabc_mode_cmdq) {
+			lcm_drv->set_cabc_mode_cmdq(handle, level);
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->oppo_set_cabc_mode_cmdq is null\n");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
+}
+#endif
 
 int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm)
 {

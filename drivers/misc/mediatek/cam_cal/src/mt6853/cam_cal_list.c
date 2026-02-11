@@ -20,6 +20,17 @@
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	{OV16A10_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{S5K3P9SP_SENSOR_ID, 0xA8, Common_read_region},
+	{OV48B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{OV32A_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX471_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX355_SENSOR_ID, 0xA8, Common_read_region},
+	{GC02K0_SENSOR_ID, 0xA4, Common_read_region},
+	{GC02M1B_SENSOR_ID1, 0xA2, Common_read_region},
+	{HI846_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+#endif
 	{IMX586_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K,
 		BL24SA64_write_region},
 	{IMX576_SENSOR_ID, 0xA2, Common_read_region},
@@ -28,7 +39,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{S5K3M5SX_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K,
 		BL24SA64_write_region},
 	{IMX686_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
-	{HI846_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{HI846_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{S5KGD1SP_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{OV16A10_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{S5K3P9SP_SENSOR_ID, 0xA8, Common_read_region},

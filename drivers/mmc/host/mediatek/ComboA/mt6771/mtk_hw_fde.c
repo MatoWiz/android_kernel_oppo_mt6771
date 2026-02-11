@@ -14,6 +14,16 @@
 #include "mtk_secure_api.h"
 #include <mmc/core/queue.h>
 
+/*This c file included by sd.c and this addition just for "implicit declaration" compile error, TODO */
+#if defined(VENDOR_EDIT) && !defined(mt_secure_call)
+extern size_t mt_secure_call_all(size_t function_id,
+        size_t arg0, size_t arg1, size_t arg2,
+        size_t arg3, size_t *r1, size_t *r2, size_t *r3);
+
+#define mt_secure_call(_fun_id, _arg0, _arg1, _arg2, _arg3) \
+        mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, 0, 0, 0)
+#endif
+
 /* map from AES Spec */
 enum {
 	MSDC_CRYPTO_XTS_AES       = 4,

@@ -91,7 +91,9 @@
 #include <linux/string_helpers.h>
 #include <linux/user_namespace.h>
 #include <linux/fs_struct.h>
-
+#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
+#include <linux/vm_anti_fragment.h>
+#endif
 #include <asm/pgtable.h>
 #include <asm/processor.h>
 #include "internal.h"
@@ -412,6 +414,22 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
 	return 0;
 }
 
+#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
+int proc_pid_search_two_way(struct seq_file *m, struct pid_namespace *ns,
+			struct pid *pid, struct task_struct *task)
+{
+	struct mm_struct *mm = get_task_mm(task);
+
+	if (mm) {
+		seq_printf(m, "%s\n",
+			mm->vm_search_two_way ? "true" : "flase");
+		mmput(mm);
+	}
+	return 0;
+
+}
+#endif
+
 static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
 			struct pid *pid, struct task_struct *task, int whole)
 {
@@ -643,6 +661,25 @@ int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
 
 	return 0;
 }
+
+#ifdef OPLUS_FEATURE_PERFORMANCE
+int proc_pid_statm_as(struct seq_file *m, struct pid_namespace *ns,
+		      struct pid *pid, struct task_struct *task)
+{
+	unsigned long size = 0;
+	struct mm_struct *mm = get_task_mm(task);
+
+	if (mm) {
+		size = get_mm_counter(mm, MM_ANONPAGES) +
+			get_mm_counter(mm, MM_SWAPENTS);
+		mmput(mm);
+	}
+	seq_put_decimal_ull(m, "", size);
+	seq_putc(m, '\n');
+
+	return 0;
+}
+#endif /* OPLUS_FEATURE_PERFORMANCE */
 
 #ifdef CONFIG_PROC_CHILDREN
 static struct pid *

@@ -479,7 +479,8 @@ ccflags-y += \
     -I$(srctree)/drivers/misc/mediatek/lcm/inc/ \
     -I$(srctree)/drivers/misc/mediatek/dfrc/ \
     -I$(srctree)/drivers/gpu/mediatek/gpufreq/include/ \
-    -I$(srctree)/drivers/misc/mediatek/sspm/
+    -I$(srctree)/drivers/misc/mediatek/sspm/ \
+    -I$(srctree)/drivers/gpu/drm/mediatek/
 
 obj-$(CONFIG_MTK_GPU_SUPPORT) += ged.o
 
@@ -487,6 +488,11 @@ ifeq ($(CONFIG_DEBUG_FS),y)
 ccflags-y += -DGED_DEBUG_FS
 ged-y += \
     src/ged_debugFS.o
+endif
+
+ifeq ($(CONFIG_OPLUS_FEATURE_MIDAS),y)
+ged-y += \
+    src/ged_oppo_ex.o
 endif
 
 ged-y += \

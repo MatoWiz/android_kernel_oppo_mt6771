@@ -1239,4 +1239,35 @@ config SND_SOC_RT5509
 	depends on I2C
 	select RT_REGMAP
 
+#ifdef OPLUS_BUG_COMPATIBILITY
+config SND_SOC_ALSACODEC_TFA9890
+	bool "Use TFA9890 As ALSACODEC"
+	default n
+#endif /* OPLUS_BUG_COMPATIBILITY */
 endmenu
+
+#ifdef OPLUS_BUG_COMPATIBILITY
+config SND_SOC_CODEC_AW87339
+	bool "Use AW87339 As PA"
+	default n
+#endif /* OPLUS_BUG_COMPATIBILITY */
+
+#ifdef OPLUS_BUG_COMPATIBILITY
+config SND_SOC_CODEC_MICBIAS_2P8V
+	bool "Set Micbias 2.8V After Recording"
+	default n
+#endif /* OPLUS_BUG_COMPATIBILITY */
+
+#ifdef OPLUS_BUG_COMPATIBILITY
+config SND_SOC_CODEC_MICBIAS_2P5V
+	bool "Set Micbias 2.5V main mic and ref mic"
+	default n
+#endif /* OPLUS_BUG_COMPATIBILITY */
+
+#ifdef OPLUS_BUG_COMPATIBILITY
+config SND_SOC_DBMDX 
+	bool "Use DBMDX As Sound Card"
+	default n
+
+source sound/soc/codecs/dbmdx/Kconfig
+#endif /* OPLUS_BUG_COMPATIBILITY */

@@ -269,13 +269,21 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle dither_status_info;
 	cmdqBackupSlotHandle dsi_vfp_line;
 	cmdqBackupSlotHandle night_light_params;
-
+	/* #ifdef OPLUS_FEATURE_ONSCREENFINGERPRINT */
+	/*
+	* add for fingerprint notify frigger
+	*/
+	cmdqBackupSlotHandle fpd_fence;
+	/* #endif */ /* OPLUS_FEATURE_ONSCREENFINGERPRINT */
 	int is_primary_sec;
 	int scen;
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	int request_fps;
 #endif
 	enum mtkfb_power_mode pm;
+	/* #ifdef OPLUS_FEATURE_AOD */
+	enum mtkfb_power_mode prev_pm;
+	/* #endif */ /* OPLUS_FEATURE_AOD */
 	enum lcm_power_state lcm_ps;
 };
 
@@ -359,6 +367,7 @@ int primary_display_diagnose_oneshot(const char *func, int line);
 int primary_display_get_info(struct disp_session_info *info);
 int primary_display_capture_framebuffer(unsigned long pbuf);
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
+					    unsigned int buf_sz,
 					    unsigned int format);
 
 int primary_display_is_video_mode(void);
@@ -404,6 +413,9 @@ int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback,
 			  unsigned int user_data);
 int primary_display_switch_dst_mode(int mode);
 int primary_display_get_lcm_index(void);
+#ifdef VENDOR_EDIT
+int _ioctl_get_lcm_module_info(unsigned long arg);
+#endif /* VENDOR_EDIT */
 int primary_display_force_set_fps(unsigned int keep, unsigned int skip);
 int primary_display_set_fps(int fps);
 int primary_display_get_lcm_max_refresh_rate(void);
@@ -432,6 +444,20 @@ int primary_display_check_test(void);
 void _primary_path_switch_dst_lock(void);
 void _primary_path_switch_dst_unlock(void);
 
+/* #ifdef OPLUS_FEATURE_ONSCREENFINGERPRINT */
+/*
+* add for get dimming layer hbm state
+*/
+int primary_display_set_lcm_hbm(bool en);
+int primary_display_hbm_wait(bool en);
+int notify_display_fpd(bool mode);
+/*
+* add for fingerprint notify frigger
+*/
+void fpd_notify_check_trig(void);
+void fpd_notify(void);
+/* #endif */ /* OPLUS_FEATURE_ONSCREENFINGERPRINT */
+
 /* AOD */
 enum lcm_power_state primary_display_set_power_state(
 enum lcm_power_state new_state);
@@ -443,6 +469,9 @@ enum mtkfb_power_mode primary_display_check_power_mode(void);
 void debug_print_power_mode_check(enum mtkfb_power_mode prev,
 				  enum mtkfb_power_mode cur);
 bool primary_is_aod_supported(void);
+/* #ifdef OPLUS_FEATURE_AOD */
+int primary_display_set_aod_mode_nolock(unsigned int mode);
+/* #endif */ /* OPLUS_FEATURE_AOD */
 
 /* legancy */
 struct LCM_PARAMS *DISP_GetLcmPara(void);

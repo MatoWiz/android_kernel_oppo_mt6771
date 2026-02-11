@@ -30,6 +30,9 @@
 #include "cmdq_device.h"
 #include "cmdq_sec_iwc_common.h"
 
+#define CLK_COUNT_NUM 12
+static int32_t mdp_clk_count[CLK_COUNT_NUM];
+
 struct CmdqMdpModuleBaseVA {
 	long MDP_RDMA0;
 	long MDP_RSZ0;
@@ -525,25 +528,33 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 
 void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 {
+	int32_t clk_count_idx = -1;
+
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
+		clk_count_idx = 1;
 		cmdq_mdp_enable_clock_CAM_MDP_TX(enable);
 		cmdq_mdp_enable_clock_CAM_MDP_RX(enable);
 		break;
 	case CMDQ_ENG_MDP_CAMIN2:
+		clk_count_idx = 2;
 		cmdq_mdp_enable_clock_CAM_MDP2_TX(enable);
 		cmdq_mdp_enable_clock_CAM_MDP2_RX(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
+		clk_count_idx = 3;
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
 		break;
 	case CMDQ_ENG_MDP_RSZ0:
+		clk_count_idx = 4;
 		cmdq_mdp_enable_clock_MDP_RSZ0(enable);
 		break;
 	case CMDQ_ENG_MDP_RSZ1:
+		clk_count_idx = 5;
 		cmdq_mdp_enable_clock_MDP_RSZ1(enable);
 		break;
 	case CMDQ_ENG_MDP_WROT0:
+		clk_count_idx = 6;
 		if (enable) {
 #ifdef CONFIG_MTK_SMI_EXT
 			smi_bus_prepare_enable(SMI_LARB0, "MDPSRAM");
@@ -557,25 +568,43 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		}
 		break;
 	case CMDQ_ENG_MDP_WDMA:
+		clk_count_idx = 7;
 		cmdq_mdp_enable_clock_MDP_WDMA(enable);
 		break;
 	case CMDQ_ENG_MDP_TDSHP0:
+		clk_count_idx = 8;
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
 		break;
 	case CMDQ_ENG_MDP_COLOR0:
+		clk_count_idx = 9;
 #ifdef CMDQ_MDP_COLOR
 		cmdq_mdp_enable_clock_MDP_COLOR0(enable);
 #endif
 		break;
 	case CMDQ_ENG_MDP_AAL0:
+		clk_count_idx = 10;
 		cmdq_mdp_enable_clock_MDP_AAL(enable);
 		break;
 	case CMDQ_ENG_MDP_CCORR0:
+		clk_count_idx = 11;
 		cmdq_mdp_enable_clock_MDP_CCORR(enable);
 		break;
 	default:
+		clk_count_idx = -1;
 		CMDQ_ERR("try to enable unknown mdp clock");
 		break;
+	}
+
+	if (clk_count_idx > 0 && clk_count_idx < CLK_COUNT_NUM) {
+		if (enable)
+			mdp_clk_count[clk_count_idx]++;
+		else {
+			mdp_clk_count[clk_count_idx]--;
+			if (mdp_clk_count[clk_count_idx] < 0)
+				CMDQ_ERR("%s disable mdp_clk_count[%d] %d\n",
+					__func__, clk_count_idx,
+					mdp_clk_count[clk_count_idx]);
+		}
 	}
 }
 
@@ -1271,10 +1300,13 @@ static void cmdq_mdp_enable_common_clock(bool enable)
 	if (enable) {
 		/* Use SMI clock API */
 		smi_bus_prepare_enable(SMI_LARB0, "MDP");
-
+		mdp_clk_count[0]++;
 	} else {
 		/* disable, reverse the sequence */
 		smi_bus_disable_unprepare(SMI_LARB0, "MDP");
+		mdp_clk_count[0]--;
+		if (mdp_clk_count[0] < 0)
+			CMDQ_ERR("%s disable %d\n", __func__, mdp_clk_count[0]);
 	}
 #endif
 #endif	/* CMDQ_PWR_AWARE */

@@ -811,6 +811,8 @@ int mtk_ddic_dsi_send_cmd(struct mtk_ddic_dsi_msg *cmd_msg,
 			DDP_FIRST_PATH, 0);
 
 	if (is_frame_mode) {
+		cmdq_pkt_clear_event(cmdq_handle,
+			mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
 		cmdq_pkt_wfe(cmdq_handle,
 			mtk_crtc->gce_obj.event[EVENT_CABC_EOF]);
 		cmdq_pkt_clear_event(cmdq_handle,
@@ -827,6 +829,8 @@ int mtk_ddic_dsi_send_cmd(struct mtk_ddic_dsi_msg *cmd_msg,
 			mtk_crtc->gce_obj.event[EVENT_STREAM_DIRTY]);
 		cmdq_pkt_set_event(cmdq_handle,
 			mtk_crtc->gce_obj.event[EVENT_CABC_EOF]);
+		cmdq_pkt_set_event(cmdq_handle,
+				mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
 	}
 
 	if (blocking) {
@@ -1372,6 +1376,279 @@ int mtk_dprec_mmp_dump_ovl_layer(struct mtk_plane_state *plane_state)
 	return -1;
 }
 
+static struct mtk_wdma_capture_info *wdma_capt_info_l;
+static struct capture_info *user_buffer_l;
+#ifdef OPLUS_FEATURE_MIDAS
+		DEFINE_MUTEX(g_dispcap_buffer_lock);
+		typedef void (*fp_buffer_complete_notify)(void *user_buffer);
+		fp_buffer_complete_notify buffer_complete_notify = 0;
+#endif
+
+bool setCaptureRect(int left, int top, int width, int height)
+{
+	struct drm_crtc *crtc;
+	struct mtk_drm_crtc *mtk_crtc;
+
+	/* this debug cmd only for crtc0 */
+	crtc = list_first_entry(&(drm_dev)->mode_config.crtc_list,
+				typeof(*crtc), head);
+	if (!crtc) {
+		DDPMSG("[ERR]find crtc fail\n");
+		return false;
+	}
+	mtk_crtc = to_mtk_crtc(crtc);
+
+	if (wdma_capt_info_l == 0) {
+		wdma_capt_info_l = kzalloc(sizeof(struct mtk_wdma_capture_info),
+			GFP_KERNEL);
+			DDPMSG("%s: need allocate memory\n", __func__);
+		}
+	if (wdma_capt_info_l == 0) {
+		DDPMSG("[ERR]%s: allocate memory fail\n", __func__);
+		return false;
+	}
+	if (width*height == 0) {
+		left = 0;
+		top = 0;
+		width = 128;
+		height = 128;
+	}
+
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+	mtk_rect_make(&wdma_capt_info_l->buffer[0].dst_roi,
+			left, top, width, height);
+	mtk_rect_make(&wdma_capt_info_l->buffer[1].dst_roi,
+			left, top, width, height);
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+
+	return true;
+
+}
+#ifdef OPLUS_FEATURE_MIDAS
+	EXPORT_SYMBOL(setCaptureRect);
+#endif
+
+bool setCaptureInterval(int interval)
+{
+	struct drm_crtc *crtc;
+	struct mtk_drm_crtc *mtk_crtc;
+
+	/* this debug cmd only for crtc0 */
+	crtc = list_first_entry(&(drm_dev)->mode_config.crtc_list,
+				typeof(*crtc), head);
+	if (!crtc) {
+		DDPMSG("[ERR]find crtc fail\n");
+		return false;
+	}
+	mtk_crtc = to_mtk_crtc(crtc);
+
+	if (wdma_capt_info_l == 0) {
+		wdma_capt_info_l = kzalloc(sizeof(struct mtk_wdma_capture_info),
+			GFP_KERNEL);
+			DDPMSG("%s: need allocate memory\n", __func__);
+		}
+	if (wdma_capt_info_l == 0) {
+		DDPMSG("[ERR]%s: allocate memory fail\n", __func__);
+		return false;
+	}
+
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+	wdma_capt_info_l->capture_interval = interval;
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+	return true;
+}
+#ifdef OPLUS_FEATURE_MIDAS
+	EXPORT_SYMBOL(setCaptureInterval);
+#endif
+
+bool setUserBuffer(u8 *user_buffer)
+{
+	if (wdma_capt_info_l) {
+#ifdef OPLUS_FEATURE_MIDAS
+		mutex_lock(&g_dispcap_buffer_lock);
+#endif
+		wdma_capt_info_l->user_buffer = user_buffer;
+#ifdef OPLUS_FEATURE_MIDAS
+		mutex_unlock(&g_dispcap_buffer_lock);
+
+		drm_trigger_repaint(DRM_REPAINT_FOR_IDLE, drm_dev);
+#endif
+		DDPMSG("[capture] user set buffer:0x%x", user_buffer);
+	}
+	return true;
+}
+#ifdef OPLUS_FEATURE_MIDAS
+	EXPORT_SYMBOL(setUserBuffer);
+#endif
+
+#ifdef OPLUS_FEATURE_MIDAS
+bool setBufferCompleteNotifyCallback(fp_buffer_complete_notify cb) {
+		mutex_lock(&g_dispcap_buffer_lock);
+		buffer_complete_notify = cb;
+		mutex_unlock(&g_dispcap_buffer_lock);
+		return true;
+}
+EXPORT_SYMBOL(setBufferCompleteNotifyCallback);
+#endif
+
+void mtk_crtc_set_wdma_capt_inf(struct drm_crtc *crtc)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	unsigned int size = sizeof(struct mtk_wdma_capture_info);
+	unsigned int addr = 0;
+	struct drm_mode_fb_cmd2 mode = {0};
+	struct mtk_drm_gem_obj *mtk_gem1;
+	struct mtk_drm_gem_obj *mtk_gem0;
+
+	if (!wdma_capt_info_l->enable && wdma_capt_info_l != 0) {
+		kfree(wdma_capt_info_l);
+		wdma_capt_info_l = 0;
+	}
+
+	if (wdma_capt_info_l == 0) {
+		wdma_capt_info_l = kzalloc(size, GFP_KERNEL);
+		DDPMSG("%s: need allocate memory\n", __func__);
+	}
+
+	if (wdma_capt_info_l == 0) {
+		DDPMSG("[ERR]%s: allocate memory fail\n", __func__);
+		return;
+	}
+
+	wdma_capt_info_l->src_roi.width =
+					crtc->state->adjusted_mode.hdisplay;
+	wdma_capt_info_l->src_roi.height =
+					crtc->state->adjusted_mode.vdisplay;
+	if (!wdma_capt_info_l->buffer[0].dst_roi.width) {
+		mtk_rect_make(&wdma_capt_info_l->buffer[0].dst_roi,
+				0, 0, 128, 128);
+		mtk_rect_make(&wdma_capt_info_l->buffer[1].dst_roi,
+				0, 0, 128, 128);
+	}
+	wdma_capt_info_l->scn = WDMA_READ_BACK;
+	if (wdma_capt_info_l->capture_interval == 0)
+		wdma_capt_info_l->capture_interval = 1;
+	wdma_capt_info_l->capture_count = 0;
+	wdma_capt_info_l->config_count = 0;
+	/*alloc && config two fb*/
+	if (wdma_capt_info_l->enable) {
+		struct drm_framebuffer *fb;
+
+		mode.width = wdma_capt_info_l->buffer[0].dst_roi.width;
+		mode.height = wdma_capt_info_l->buffer[0].dst_roi.height;
+		mode.pixel_format = DRM_FORMAT_RGB888;
+		mode.pitches[0] = mode.width * 3;
+		if (!wdma_capt_info_l->buffer[0].addr_virt) {
+			mtk_gem0 = mtk_drm_gem_create(
+				crtc->dev, mode.width * mode.height * 3, true);
+			wdma_capt_info_l->buffer[0].addr_virt =
+					(unsigned long long)mtk_gem0->kvaddr;
+			wdma_capt_info_l->buffer[0].fb  =
+				mtk_drm_framebuffer_create(
+				crtc->dev, &mode, &mtk_gem0->base);
+			fb = wdma_capt_info_l->buffer[0].fb;
+			addr = (u32)mtk_fb_get_dma(fb);
+			wdma_capt_info_l->buffer[0].addr_phy = addr;
+		}
+		if (!wdma_capt_info_l->buffer[1].addr_virt) {
+			mtk_gem1 = mtk_drm_gem_create(
+				crtc->dev, mode.width * mode.height * 3, true);
+			wdma_capt_info_l->buffer[1].addr_virt =
+					(unsigned long long)mtk_gem1->kvaddr;
+			wdma_capt_info_l->buffer[1].fb  =
+				mtk_drm_framebuffer_create(
+				crtc->dev, &mode, &mtk_gem1->base);
+			fb = wdma_capt_info_l->buffer[1].fb;
+			addr = (u32)mtk_fb_get_dma(fb);
+			wdma_capt_info_l->buffer[1].addr_phy = addr;
+		}
+	}
+	mtk_crtc->wdma_capture_info = wdma_capt_info_l;
+	DDPMSG("[capture] enable capture, roi:(%d,%d,%d,%d), interval:%d\n",
+		wdma_capt_info_l->buffer[0].dst_roi.x,
+		wdma_capt_info_l->buffer[0].dst_roi.y,
+		wdma_capt_info_l->buffer[0].dst_roi.width,
+		wdma_capt_info_l->buffer[0].dst_roi.height,
+		wdma_capt_info_l->capture_interval);
+}
+
+bool createUserBuffer(void)
+{
+	if (user_buffer_l == 0) {
+		user_buffer_l = kzalloc(sizeof(struct capture_info),
+			GFP_KERNEL);
+		DDPMSG("%s: need allocate memory\n", __func__);
+	}
+
+	if (user_buffer_l == 0) {
+		DDPMSG("[ERR]%s: allocate memory fail\n", __func__);
+		return false;
+	}
+
+	user_buffer_l->data.image = kzalloc(sizeof(u8)*128*128*3, GFP_KERNEL);
+
+	if (user_buffer_l->data.image == 0) {
+		DDPMSG("[ERR]%s: allocate memory fail\n", __func__);
+		return false;
+	}
+
+	return true;
+}
+
+bool enableCapture(int en)
+{
+	struct drm_crtc *crtc;
+	struct mtk_drm_crtc *mtk_crtc;
+	struct mtk_drm_private *private;
+
+	/* this debug cmd only for crtc0 */
+	crtc = list_first_entry(&(drm_dev)->mode_config.crtc_list,
+				typeof(*crtc), head);
+	if (!crtc) {
+		DDPMSG("[ERR]find crtc fail\n");
+		return false;
+	}
+	mtk_crtc = to_mtk_crtc(crtc);
+
+	if (wdma_capt_info_l == 0) {
+		wdma_capt_info_l = kzalloc(sizeof(struct mtk_wdma_capture_info),
+			GFP_KERNEL);
+		DDPMSG("%s: need allocate memory\n", __func__);
+	}
+	if (wdma_capt_info_l == 0) {
+		DDPMSG("[ERR]%s: allocate memory fail\n", __func__);
+		return false;
+	}
+	if (user_buffer_l == 0) {
+#ifdef OPLUS_FEATURE_MIDAS
+		mtk_crtc->user_buffer = 0;
+#else
+		createUserBuffer();
+		mtk_crtc->user_buffer = user_buffer_l;
+#endif
+	}
+	private = crtc->dev->dev_private;
+
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+	if (!mtk_crtc->enabled) {
+		DDPMSG("crtc%d disable skip %s\n",
+			drm_crtc_index(&mtk_crtc->base), __func__);
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+		return false;
+	}
+
+	wdma_capt_info_l->enable = en;
+	if (en)
+		mtk_crtc_set_wdma_capt_inf(crtc);
+	else
+		DDPMSG("[capture] disable capture");
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+	return true;
+}
+#ifdef OPLUS_FEATURE_MIDAS
+	EXPORT_SYMBOL(enableCapture);
+#endif
+
 static void process_dbg_opt(const char *opt)
 {
 	DDPINFO("display_debug cmd %s\n", opt);
@@ -1850,6 +2127,7 @@ static void process_dbg_opt(const char *opt)
 		mtk_crtc = to_mtk_crtc(crtc);
 		comp = mtk_ddp_comp_request_output(mtk_crtc);
 		comp->funcs->io_cmd(comp, NULL, DSI_LFR_STATUS_CHECK, NULL);
+
 	} else if (strncmp(opt, "tui:", 4) == 0) {
 		unsigned int en, ret;
 
@@ -2224,3 +2502,12 @@ void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size,
 		*start = 0;
 	}
 }
+
+//#ifdef VENDOR_EDIT
+struct drm_device *get_drm_device(){
+    return drm_dev;
+}
+EXPORT_SYMBOL(get_drm_device);
+//#endif
+
+

@@ -15,7 +15,9 @@
 #include "eeprom_i2c_common_driver.h"
 #include "eeprom_i2c_custom_driver.h"
 #include "kd_imgsensor.h"
-
+#ifndef OPLUS_FEATURE_CAMERA_COMMON
+#define OPLUS_FEATURE_CAMERA_COMMON
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 	{IMX519_SENSOR_ID, 0xA0, Common_read_region},
@@ -31,6 +33,13 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX386_MONO_SENSOR_ID, 0xA0, Common_read_region},
 	/*B+B. No Cal data for main2 OV8856*/
 	{S5K2P7_SENSOR_ID, 0xA0, Common_read_region},
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#define MAX_EEPROM_SIZE_16K 0x4000
+    {PASCALA_TRULY_MAIN_S5KGM1SP_SENSOR_ID,0XA0,Common_read_region,MAX_EEPROM_SIZE_16K},
+    {PASCALA_SHENGTAI_WIDE_OV8856_SENSOR_ID,0XA2,Common_read_region,MAX_EEPROM_SIZE_16K},
+    {PASCALA_SHENGTAI_MACRO_OV02B10_SENSOR_ID,0XA4,Common_read_region,MAX_EEPROM_SIZE_16K},
+    {PASCALA_TRULY2_MAIN_S5KGM1SP_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+#endif
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };

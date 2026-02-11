@@ -24,6 +24,7 @@
 #include "ufs-mtk.h"
 #endif
 #include <mt-plat/mtk_boot.h>
+#include <linux/delay.h>
 
 static void __iomem *pwrap_base;
 
@@ -72,8 +73,14 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_MASK				0xFFFF
 #define PMIC_REG_SHIFT				0
 
-
+//#ifndef VENDOR_EDIT
+// Remove for : used system CLK
+ /*
 #define PMIC_CW00_INIT_VAL			0x4E1D
+*/
+//else
+#define PMIC_CW00_INIT_VAL			0x4EDD
+//endif
 #define PMIC_CW11_INIT_VAL			0xA000
 /* TODO: BBLPM HW mode */
 #define XO_BB_LPM_HW		(0x1 << 0)
@@ -217,14 +224,16 @@ static void pmic_clk_buf_ctrl_pd(short on)
 
 static void pmic_clk_buf_ctrl_ext(short on)
 {
-	if (on)
+	if (on) {
 		pmic_config_interface(PMIC_DCXO_CW11_SET_ADDR, 0x1,
 				      PMIC_XO_EXTBUF7_EN_M_MASK,
 				      PMIC_XO_EXTBUF7_EN_M_SHIFT);
-	else
+		udelay(400);
+	} else {
 		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR, 0x1,
 				      PMIC_XO_EXTBUF7_EN_M_MASK,
 				      PMIC_XO_EXTBUF7_EN_M_SHIFT);
+	}
 }
 
 static void pmic_clk_buf_ctrl(enum CLK_BUF_SWCTRL_STATUS_T *status)
@@ -1676,10 +1685,16 @@ void clk_buf_post_init(void)
 	/* no need to use XO_EXT if storage is emmc */
 	if (boot_type != BOOTDEV_UFS)
 		clk_buf_ctrl_internal(CLK_BUF_UFS, false);
+//#ifndef VENDOR_EDIT
+// Remove for : used system CLK
+ /*
 #ifndef CONFIG_NFC_CHIP_SUPPORT
-	/* no need to use XO_NFC if no NFC */
-	clk_buf_ctrl_internal(CLK_BUF_NFC, false);
+	// no need to use XO_NFC if no NFC
+	clk_buf_ctrl_internal(CLK_BUF_NFC, CLK_BUF_FORCE_OFF);
+	CLK_BUF3_STATUS = CLOCK_BUFFER_DISABLE;
 #endif
+ */
+//#endif /* VENDOR_EDIT */
 #ifdef CLKBUF_USE_BBLPM
 	/* For no modem case, just keep bblpm SW mode for deepidle
 	 * but disable the bblpm HW mode.

@@ -72,6 +72,10 @@ struct CRTC_MMP_Events {
 	mmp_event release_fence;
 	mmp_event update_present_fence;
 	mmp_event release_present_fence;
+	mmp_event update_sf_present_fence;
+	mmp_event release_sf_present_fence;
+	mmp_event warn_sf_pf_0;
+	mmp_event warn_sf_pf_2;
 	mmp_event atomic_begin;
 	mmp_event atomic_flush;
 	mmp_event enable_vblank;
@@ -99,6 +103,8 @@ struct CRTC_MMP_Events {
 	mmp_event clk_change;
 	mmp_event layerBmpDump;
 	mmp_event layer_dump[6];
+	mmp_event wdmaBmpDump;
+	mmp_event wdma_dump;
 };
 
 struct DRM_MMP_Events *get_drm_mmp_events(void);
@@ -106,6 +112,12 @@ struct CRTC_MMP_Events *get_crtc_mmp_events(unsigned long id);
 void drm_mmp_init(void);
 int mtk_drm_mmp_ovl_layer(struct mtk_plane_state *state,
 			  u32 downSampleX, u32 downSampleY);
+int mtk_drm_mmp_wdma_cpt(struct drm_crtc *crtc,
+			  struct mtk_wdma_capture_info *wdma_capt_info);
+int crtc_mva_map_kernel(unsigned int mva, unsigned int size,
+			unsigned long *map_va, unsigned int *map_size);
+int mtk_drm_wdma_capture_init(struct drm_crtc *crtc);
+
 
 /* print mmp log for DRM_MMP_Events */
 #ifdef CONFIG_DRM_MEDIATEK

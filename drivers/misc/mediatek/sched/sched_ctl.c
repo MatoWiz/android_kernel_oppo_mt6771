@@ -33,6 +33,10 @@
 #include "mtk_devinfo.h"
 #endif
 
+#if defined(OPLUS_FEATURE_CORE_CTL) && defined(CONFIG_SCHED_CORE_CTL)
+#include <linux/sched/core_ctl.h>
+#endif /* OPLUS_FEATURE_CORE_CTL */
+
 #define SCHED_HINT_THROTTLE_NSEC 10000000 /* 10ms for throttle */
 
 struct sched_hint_data {
@@ -694,7 +698,6 @@ int set_sched_boost(unsigned int val)
 
 	if (sched_boost_type == val)
 		return 0;
-
 	mutex_lock(&sched_boost_mutex);
 	/* back to original setting*/
 	if (sched_boost_type == SCHED_ALL_BOOST)
@@ -709,15 +712,21 @@ int set_sched_boost(unsigned int val)
 			sysctl_sched_isolation_hint_enable =
 				sysctl_sched_isolation_hint_enable_backup;
 
+#if defined(OPLUS_FEATURE_CORE_CTL) && defined(CONFIG_SCHED_CORE_CTL)
+		core_ctl_set_boost(false);
+#endif /* OPLUS_FEATURE_CORE_CTL */
 	} else if ((val > SCHED_NO_BOOST) && (val < SCHED_UNKNOWN_BOOST)) {
 
 		sysctl_sched_isolation_hint_enable_backup =
 				sysctl_sched_isolation_hint_enable;
 		sysctl_sched_isolation_hint_enable = 0;
 
-		if (val == SCHED_ALL_BOOST)
+		if (val == SCHED_ALL_BOOST) {
 			sched_scheduler_switch(SCHED_HMP_LB);
-		else if (val == SCHED_FG_BOOST)
+#if defined(OPLUS_FEATURE_CORE_CTL) && defined(CONFIG_SCHED_CORE_CTL)
+			core_ctl_set_boost(true);
+#endif /* OPLUS_FEATURE_CORE_CTL */
+		} else if (val == SCHED_FG_BOOST)
 			sched_set_boost_fg();
 	}
 	printk_deferred("[name:sched_boost&] sched boost: set %d\n",
@@ -875,8 +884,13 @@ int sched_walt_enable(int user, int en)
 	}
 
 #ifdef CONFIG_SCHED_WALT
+#ifdef OPLUS_FEATURE_UIFIRST
+	sysctl_sched_use_walt_cpu_util  = 0;
+	sysctl_sched_use_walt_task_util = 0;
+#else
 	sysctl_sched_use_walt_cpu_util  = walted;
 	sysctl_sched_use_walt_task_util = walted;
+#endif
 	trace_sched_ctl_walt(user_mask, walted);
 #endif
 

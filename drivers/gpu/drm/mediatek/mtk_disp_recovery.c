@@ -34,9 +34,21 @@
 #include "mtk_drm_mmp.h"
 #include "mtk_drm_fbdev.h"
 #include "mtk_drm_trace.h"
+//#ifdef OPLUS_FEATURE_ESD
+#include <mt-plat/mtk_boot_common.h>
+//#endif
 
 #define ESD_TRY_CNT 5
-#define ESD_CHECK_PERIOD 2000 /* ms */
+//#ifndef OPLUS_FEATURE_ESD
+//#define ESD_CHECK_PERIOD 2000 /* ms */
+//#else
+#define ESD_CHECK_PERIOD 5000 /* ms */
+
+extern unsigned long esd_mode;
+extern unsigned int ffl_backlight_backup;
+unsigned long esd_flag = 0;
+EXPORT_SYMBOL(esd_flag);
+//#endif
 
 /* pinctrl implementation */
 long _set_state(struct drm_crtc *crtc, const char *name)
@@ -111,7 +123,15 @@ static inline int _can_switch_check_mode(struct drm_crtc *crtc,
 static inline int _lcm_need_esd_check(struct mtk_panel_ext *panel_ext)
 {
 	int ret = 0;
-
+//#ifdef OPLUS_FEATURE_ESD
+	switch(get_boot_mode())
+	{
+		case FACTORY_BOOT:
+				 return ret;
+		default:
+				 break;
+	}
+//#endif
 	if (panel_ext->params->esd_check_enable == 1 &&
 		mtk_drm_lcm_is_connect()) {
 		ret = 1;
@@ -164,6 +184,7 @@ int _mtk_esd_check_read(struct drm_crtc *crtc)
 	struct cmdq_pkt *cmdq_handle, *cmdq_handle2;
 	struct mtk_drm_esd_ctx *esd_ctx;
 	int ret = 0;
+	struct mtk_drm_private *priv = crtc->dev->dev_private;
 
 	DDPINFO("[ESD]ESD read panel\n");
 
@@ -232,6 +253,19 @@ int _mtk_esd_check_read(struct drm_crtc *crtc)
 		mtk_disp_mutex_trigger(mtk_crtc->mutex[0], cmdq_handle);
 		mtk_ddp_comp_io_cmd(output_comp, cmdq_handle, COMP_REG_START,
 				    NULL);
+
+		if (mtk_drm_helper_get_opt(priv->helper_opt,
+					   MTK_DRM_OPT_SF_PF)) {
+			struct cmdq_pkt_buffer *buf = &(mtk_crtc->gce_obj.buf);
+
+			cmdq_pkt_mem_move(cmdq_handle, mtk_crtc->gce_obj.base,
+				buf->pa_base +
+				DISP_SLOT_SF_PRESENT_FENCE_CONF(
+							drm_crtc_index(crtc)),
+				buf->pa_base + DISP_SLOT_SF_PRESENT_FENCE(
+							drm_crtc_index(crtc)),
+				CMDQ_THR_SPR_IDX3);
+		}
 	}
 	esd_ctx = mtk_crtc->esd_ctx;
 	esd_ctx->chk_sta = 0;
@@ -485,7 +519,11 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 			atomic_read(&esd_ctx->check_wakeup) &&
 			(atomic_read(&esd_ctx->target_time) ||
 				esd_ctx->chk_mode == READ_EINT));
-		if (ret < 0) {
+		//#ifndef OPLUS_BUG_STABILITY
+		//if (ret < 0) {
+		//#else
+		if (ret < 0 || ffl_backlight_backup == 0 || ffl_backlight_backup == 1) {
+		//#endif
 			DDPINFO("[ESD]check thread waked up accidently\n");
 			continue;
 		}
@@ -507,13 +545,22 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 		do {
 			ret = mtk_drm_esd_check(crtc);
 
-			if (!ret) /* success */
+			//#ifndef OPLUS_FEATURE_ESD
+			//if (!ret) /* success */
+				//break;
+			//#else
+			if (!esd_mode && !ret) /* success */
 				break;
-
+			esd_flag = 1;
+			//#endif
 			DDPPR_ERR(
 				"[ESD]esd check fail, will do esd recovery. try=%d\n",
 				i);
 			mtk_drm_esd_recover(crtc);
+			//#ifdef OPLUS_FEATURE_ESD
+			esd_mode = 0;
+			esd_flag = 0;
+			//#endif
 			recovery_flg = 1;
 		} while (++i < ESD_TRY_CNT);
 
@@ -612,7 +659,10 @@ static void mtk_disp_esd_chk_init(struct drm_crtc *crtc)
 	atomic_set(&esd_ctx->check_wakeup, 0);
 	atomic_set(&esd_ctx->ext_te_event, 0);
 	atomic_set(&esd_ctx->target_time, 0);
-	esd_ctx->chk_mode = READ_EINT;
+	if (panel_ext->params->cust_esd_check == 1)
+		esd_ctx->chk_mode = READ_LCM;
+	else
+		esd_ctx->chk_mode = READ_EINT;
 	mtk_drm_request_eint(crtc);
 
 	wake_up_process(esd_ctx->disp_esd_chk_task);

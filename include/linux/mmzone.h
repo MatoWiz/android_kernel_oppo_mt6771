@@ -28,6 +28,10 @@
 #endif
 #define MAX_ORDER_NR_PAGES (1 << (MAX_ORDER - 1))
 
+#if defined(OPLUS_FEATURE_MULTI_FREEAREA) && defined(CONFIG_PHYSICAL_ANTI_FRAGMENTATION)
+#define FREE_AREA_COUNTS 4
+#endif
+
 /*
  * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
  * costly to service.  That is between allocation orders which should
@@ -37,6 +41,8 @@
 #define PAGE_ALLOC_COSTLY_ORDER 3
 
 enum migratetype {
+#define MAX_KSWAPD_THREADS 16
+
 	MIGRATE_UNMOVABLE,
 	MIGRATE_MOVABLE,
 	MIGRATE_RECLAIMABLE,
@@ -151,6 +157,9 @@ enum zone_stat_item {
 	NR_ZSPAGES,		/* allocated in zsmalloc */
 #endif
 	NR_FREE_CMA_PAGES,
+#ifdef OPLUS_FEATURE_HEALTHINFO
+	NR_IONCACHE_PAGES,
+#endif /* OPLUS_FEATURE_HEALTHINFO */
 	NR_VM_ZONE_STAT_ITEMS };
 
 enum node_stat_item {
@@ -360,6 +369,13 @@ enum zone_type {
 
 #ifndef __GENERATING_BOUNDS_H
 
+#if defined(OPLUS_FEATURE_MULTI_FREEAREA) && defined(CONFIG_PHYSICAL_ANTI_FRAGMENTATION)
+struct page_label {
+    unsigned long label;
+    unsigned long segment;
+};
+#endif
+
 struct zone {
 	/* Read-mostly fields */
 
@@ -440,7 +456,9 @@ struct zone {
 	unsigned long		managed_pages;
 	unsigned long		spanned_pages;
 	unsigned long		present_pages;
-
+#if defined(OPLUS_FEATURE_MULTI_FREEAREA) && defined(CONFIG_PHYSICAL_ANTI_FRAGMENTATION)
+    struct page_label zone_label[FREE_AREA_COUNTS];
+#endif
 	const char		*name;
 
 #ifdef CONFIG_MEMORY_ISOLATION
@@ -463,7 +481,11 @@ struct zone {
 	ZONE_PADDING(_pad1_)
 
 	/* free areas of different sizes */
+#if defined(OPLUS_FEATURE_MULTI_FREEAREA) && defined(CONFIG_PHYSICAL_ANTI_FRAGMENTATION)
+	struct free_area	free_area[FREE_AREA_COUNTS][MAX_ORDER];
+#else
 	struct free_area	free_area[MAX_ORDER];
+#endif
 
 	/* zone flags, see below */
 	unsigned long		flags;
@@ -658,8 +680,6 @@ typedef struct pglist_data {
 	int node_id;
 	wait_queue_head_t kswapd_wait;
 	wait_queue_head_t pfmemalloc_wait;
-	struct task_struct *kswapd;	/* Protected by
-					   mem_hotplug_begin/end() */
 	int kswapd_order;
 	enum zone_type kswapd_classzone_idx;
 
@@ -671,6 +691,10 @@ typedef struct pglist_data {
 	wait_queue_head_t kcompactd_wait;
 	struct task_struct *kcompactd;
 #endif
+	/*
+	 * Protected by mem_hotplug_begin/end()
+	 */
+	struct task_struct *kswapd[MAX_KSWAPD_THREADS];
 #ifdef CONFIG_NUMA_BALANCING
 	/* Lock serializing the migrate rate limiting window */
 	spinlock_t numabalancing_migrate_lock;
@@ -877,7 +901,7 @@ static inline int is_highmem_idx(enum zone_type idx)
 }
 
 /**
- * is_highmem - helper function to quickly check if a struct zone is a 
+ * is_highmem - helper function to quickly check if a struct zone is a
  *              highmem zone or not.  This is an attempt to keep references
  *              to ZONE_{DMA/NORMAL/HIGHMEM/etc} in general code to a minimum.
  * @zone - pointer to struct zone variable
@@ -893,6 +917,8 @@ static inline int is_highmem(struct zone *zone)
 
 /* These two functions are used to setup the per zone pages min values */
 struct ctl_table;
+int kswapd_threads_sysctl_handler(struct ctl_table *, int,
+					void __user *, size_t *, loff_t *);
 int min_free_kbytes_sysctl_handler(struct ctl_table *, int,
 					void __user *, size_t *, loff_t *);
 int watermark_scale_factor_sysctl_handler(struct ctl_table *, int,

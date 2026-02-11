@@ -254,8 +254,6 @@ const struct ISR_TABLE DPE_IRQ_CB_TBL[DPE_IRQ_TYPE_AMOUNT] = {
 #endif
 };
 #endif
-/*
- */
 /*  */
 typedef void (*tasklet_cb)(unsigned long);
 struct Tasklet_table {
@@ -279,6 +277,9 @@ struct wakeup_source DPE_wake_lock;
 
 static DEFINE_MUTEX(gDpeMutex);
 static DEFINE_MUTEX(gDpeDequeMutex);
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+static DEFINE_MUTEX(MutexDPERef);
+#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 #ifdef CONFIG_OF
 
@@ -427,7 +428,9 @@ struct DPE_IRQ_INFO_STRUCT {
 };
 
 struct DPE_INFO_STRUCT {
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	spinlock_t SpinLockDPERef;
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	spinlock_t SpinLockDPE;
 	spinlock_t SpinLockIrq[DPE_IRQ_TYPE_AMOUNT];
 	wait_queue_head_t WaitQueueHead;
@@ -3020,13 +3023,25 @@ static inline void DPE_Reset(void)
 	LOG_DBG("- E.");
 
 	LOG_DBG(" DPE Reset start!\n");
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	spin_lock(&(DPEInfo.SpinLockDPERef));
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	mutex_lock(&(MutexDPERef));
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 	if (DPEInfo.UserCount > 1) {
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		LOG_DBG("Curr UserCount(%d) users exist", DPEInfo.UserCount);
 	} else {
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 		/* Reset DPE flow */
 		DPE_MASKWR(DVS_CTRL01_REG, 0x70000000, 0x70000000);
@@ -4147,8 +4162,11 @@ static signed int DPE_open(struct inode *pInode, struct file *pFile)
 
 
 	/*  */
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	spin_lock(&(DPEInfo.SpinLockDPERef));
-
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	mutex_lock(&(MutexDPERef));
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	pFile->private_data = NULL;
 	pFile->private_data = kmalloc(sizeof(struct DPE_USER_INFO_STRUCT),
 								GFP_ATOMIC);
@@ -4157,6 +4175,10 @@ static signed int DPE_open(struct inode *pInode, struct file *pFile)
 								current->comm,
 						current->pid, current->tgid);
 		Ret = -ENOMEM;
+		#ifdef OPLUS_FEATURE_CAMERA_COMMON
+		mutex_unlock(&(MutexDPERef));
+		goto EXIT;
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	} else {
 		pUserInfo = (struct DPE_USER_INFO_STRUCT *) pFile->private_data;
 		pUserInfo->Pid = DPEInfo.UserCount;
@@ -4165,14 +4187,20 @@ static signed int DPE_open(struct inode *pInode, struct file *pFile)
 	/*  */
 	if (DPEInfo.UserCount > 0) {
 		DPEInfo.UserCount++;
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		LOG_DBG("Cur Usr(%d), (proc, pid, tgid)=(%s, %d, %d), exist",
 			DPEInfo.UserCount, current->comm, current->pid,
 								current->tgid);
 		goto EXIT;
 	} else {
 		DPEInfo.UserCount++;
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 		/* do wait queue head init when re-enter in camera */
 		/*  */
@@ -4211,6 +4239,9 @@ static signed int DPE_open(struct inode *pInode, struct file *pFile)
 		/*  */
 		dpe_register_requests(&dpe_reqs, sizeof(struct DPE_Config));
 		dpe_set_engine_ops(&dpe_reqs, &dpe_ops);
+		#ifdef OPLUS_FEATURE_CAMERA_COMMON
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 		LOG_DBG("Cur Usr(%d), (proc, pid, tgid)=(%s, %d, %d), 1st user",
 			DPEInfo.UserCount, current->comm, current->pid,
@@ -4267,18 +4298,31 @@ static signed int DPE_release(struct inode *pInode, struct file *pFile)
 		pFile->private_data = NULL;
 	}
 	/*  */
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	spin_lock(&(DPEInfo.SpinLockDPERef));
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	mutex_lock(&(MutexDPERef));
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	DPEInfo.UserCount--;
 
 	if (DPEInfo.UserCount > 0) {
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		LOG_DBG("Cur UsrCnt(%d), (proc, pid, tgid)=(%s, %d, %d), exist",
 			DPEInfo.UserCount, current->comm, current->pid,
 								current->tgid);
 		goto EXIT;
 	} else {
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
 		dpe_unregister_requests(&dpe_reqs);
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		dpe_unregister_requests(&dpe_reqs);
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	}
 	/*  */
 	LOG_INF("Curr UsrCnt(%d), (process, pid, tgid)=(%s, %d, %d), last user",
@@ -4825,7 +4869,9 @@ if (DPE_dev->irq > 0) {
 #endif
 
 		/* Init spinlocks */
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_lock_init(&(DPEInfo.SpinLockDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		spin_lock_init(&(DPEInfo.SpinLockDPE));
 		for (n = 0; n < DPE_IRQ_TYPE_AMOUNT; n++)
 			spin_lock_init(&(DPEInfo.SpinLockIrq[n]));
@@ -4848,9 +4894,17 @@ if (DPE_dev->irq > 0) {
 
 
 		/* Init DPEInfo */
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_lock(&(DPEInfo.SpinLockDPERef));
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		mutex_lock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		DPEInfo.UserCount = 0;
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		spin_unlock(&(DPEInfo.SpinLockDPERef));
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		mutex_unlock(&(MutexDPERef));
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		/*  */
 		DPEInfo.IrqInfo.Mask[DPE_IRQ_TYPE_INT_DVP_ST] = INT_ST_MASK_DPE;
 

@@ -30,6 +30,9 @@
 #include "tcpm.h"
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
+#ifdef OPLUS_FEATURE_CHG_BASIC
+extern void oplus_chg_set_otg_online(bool online);
+#endif /* OPLUS_FEATURE_CHG_BASIC */
 static struct notifier_block otg_nb;
 static struct tcpc_device *otg_tcpc_dev;
 static struct delayed_work register_otg_work;
@@ -63,6 +66,10 @@ static void do_register_otg_work(struct work_struct *data)
 	}
 
 	DBG(0, "register OTG <%p> ok\n", otg_tcpc_dev);
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	msleep(500);
+	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_SNK);
+#endif /* OPLUS_FEATURE_CHG_BASIC */
 }
 #endif
 #endif
@@ -159,6 +166,10 @@ static void _set_vbus(int is_on)
 		vbus_on = true;
 #ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
+#ifdef OPLUS_FEATURE_CHG_BASIC
+                oplus_chg_set_otg_online(true);
+#endif /* OPLUS_FEATURE_CHG_BASIC */
+
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger, 1500000);
 #else
@@ -175,6 +186,9 @@ static void _set_vbus(int is_on)
 #ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_enable_otg(primary_charger, false);
+#ifdef OPLUS_FEATURE_CHG_BASIC
+		oplus_chg_set_otg_online(false);
+#endif /* OPLUS_FEATURE_CHG_BASIC */
 #else
 		set_chr_enable_otg(0x0);
 #endif
@@ -452,6 +466,24 @@ void switch_int_to_host(struct musb *musb)
 	DBG(0, "%s is done\n", __func__);
 }
 
+#ifdef CONFIG_OPLUS_CHARGER_MTK6769
+static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id);
+void musb_ctrl_host(bool on_off)
+{
+	if (!otg_tcpc_dev) {
+		DBG(0, "host not inited, directly return\n");
+		return;
+	}
+	DBG(0, "OTG <%p, %p>\n",
+			otg_tcpc_dev,
+			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
+	if(on_off == false)
+		tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_SNK);
+	else
+		tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_DRP);
+}
+EXPORT_SYMBOL(musb_ctrl_host);
+#endif /*CONFIG_OPLUS_CHARGER_MTK6769*/
 static void do_host_plug_test_work(struct work_struct *data)
 {
 	static ktime_t ktime_begin, ktime_end;

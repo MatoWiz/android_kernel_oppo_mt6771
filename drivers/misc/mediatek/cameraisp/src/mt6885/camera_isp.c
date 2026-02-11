@@ -1645,7 +1645,11 @@ static void ISP_DumpRawiR2DebugData(enum ISP_IRQ_TYPE_ENUM module)
 		fifo_dbg_data_case2, fifo_dbg_data_case3);
 
 	/* Reset SNAPSHOT_SEL to dma_error for RAWI debug */
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	ISP_WR32(CAM_REG_DBG_SET(innerRegModule), 0x00200000);
+	#else
+	ISP_WR32(CAM_REG_DBG_SET(innerRegModule), 0x00040000);
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 }
 
 void dumpAllRegs(enum ISP_DEV_NODE_ENUM module)
@@ -4636,12 +4640,21 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						CAM_REG_TG_VF_CON(DebugFlag[1]),
 						(vf + 0x1));
 					/*For RAWI DMA Err debug*/
+					#ifndef OPLUS_FEATURE_CAMERA_COMMON
 					ISP_WR32(CAM_REG_DBG_SET(ISP_CAM_A_IDX),
 						0x00200000);
 					ISP_WR32(CAM_REG_DBG_SET(ISP_CAM_B_IDX),
 						0x00200000);
 					ISP_WR32(CAM_REG_DBG_SET(ISP_CAM_C_IDX),
 						0x00200000);
+					#else
+					ISP_WR32(CAM_REG_DBG_SET(ISP_CAM_A_IDX),
+						0x00040000);
+					ISP_WR32(CAM_REG_DBG_SET(ISP_CAM_B_IDX),
+						0x00040000);
+					ISP_WR32(CAM_REG_DBG_SET(ISP_CAM_C_IDX),
+						0x00040000);
+					#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 				}
 
 #if (TIMESTAMP_QUEUE_EN == 1)

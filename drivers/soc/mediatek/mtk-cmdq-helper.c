@@ -21,6 +21,25 @@
 #endif
 
 #endif
+#ifdef MTK_DRM_ADVANCE
+//#ifdef VENDOR_EDIT
+extern bool oplus_dc_set;
+#endif
+
+//#ifdef OPLUS_CMDQ_TIMEOUT_OPTIMIZE
+#if defined(CONFIG_MACH_MT6853) || defined(CONFIG_MACH_MT6873) || defined(CONFIG_MACH_MT6885)
+extern atomic_t disp_cmdq_timeout_flag;
+extern int mtk_dprec_logger_pr(unsigned int type, char *fmt, ...);
+enum DPREC_LOGGER_PR_TYPE {
+	DPREC_LOGGER_ERROR,
+	DPREC_LOGGER_FENCE,
+	DPREC_LOGGER_DEBUG,
+	DPREC_LOGGER_DUMP,
+	DPREC_LOGGER_STATUS,
+	DPREC_LOGGER_PR_NUM
+};
+#endif
+//#endif
 
 #define CMDQ_ARG_A_WRITE_MASK	0xffff
 #define CMDQ_WRITE_ENABLE_MASK	BIT(0)
@@ -1179,6 +1198,11 @@ s32 cmdq_pkt_poll_timeout(struct cmdq_pkt *pkt, u32 value, u8 subsys,
 	}
 
 	/* assign temp spr as empty, shoudl fill in end addr later */
+	//#ifdef OPLUS_BUG_STABILITY
+	if (unlikely(!pkt->avail_buf_size))
+		if (cmdq_pkt_add_cmd_buffer(pkt) < 0)
+			return -ENOMEM;
+	//#endif
 	end_addr_mark = pkt->cmd_buf_size;
 	cmdq_pkt_assign_command(pkt, reg_tmp, 0);
 
@@ -1220,8 +1244,16 @@ s32 cmdq_pkt_poll_timeout(struct cmdq_pkt *pkt, u32 value, u8 subsys,
 	cmdq_pkt_logic_command(pkt, CMDQ_LOGIC_ADD, reg_counter, &lop,
 		&rop);
 
+#ifdef MTK_DRM_ADVANCE
+//#ifdef VENDOR_EDIT
+	if (!oplus_dc_set) {
 	cmdq_pkt_sleep(pkt, CMDQ_POLL_TICK, reg_gpr);
-
+	oplus_dc_set = false;
+	}
+//#endif /* VENDOR_EDIT */
+#else
+	cmdq_pkt_sleep(pkt, CMDQ_POLL_TICK, reg_gpr);
+#endif /* MTK_DRM_ADVANCE */
 	/* loop to begin */
 	if (absolute) {
 		cmd_pa = cmdq_pkt_get_pa_by_offset(pkt, begin_mark);
@@ -1514,7 +1546,9 @@ static void cmdq_pkt_err_irq_dump(struct cmdq_pkt *pkt)
 	cmdq_util_error_enable();
 
 	cmdq_util_err("begin of error irq %u", err_num++);
-
+	//#ifdef OPLUS_BUG_STABILITY
+	cmdq_util_dump_dbg_reg(client->chan);
+	//#endif
 	cmdq_task_get_thread_pc(client->chan, &pc);
 	cmdq_util_err("pkt:%lx thread:%d pc:%lx",
 		(unsigned long)pkt, thread_id, (unsigned long)pc);
@@ -2309,6 +2343,15 @@ void cmdq_buf_cmd_parse(u64 *buf, u32 cmd_nr, dma_addr_t buf_pa,
 		cmdq_util_msg("%s%s",
 			info ? info : (buf_pa == cur_pa ? ">>" : "  "),
 			text);
+//#ifdef OPLUS_CMDQ_TIMEOUT_OPTIMIZE
+#if defined(CONFIG_MACH_MT6853) || defined(CONFIG_MACH_MT6873) || defined(CONFIG_MACH_MT6885)
+		if (atomic_read(&disp_cmdq_timeout_flag) == 1) {
+			if ((info == NULL) && (buf_pa == cur_pa)) {
+				mtk_dprec_logger_pr(DPREC_LOGGER_ERROR, ">>%s\n", text);
+			}
+		}
+#endif
+//#endif
 		buf_pa += CMDQ_INST_SIZE;
 	}
 }
@@ -2321,7 +2364,8 @@ s32 cmdq_pkt_dump_buf(struct cmdq_pkt *pkt, dma_addr_t curr_pa)
 	list_for_each_entry(buf, &pkt->buf, list_entry) {
 		if (list_is_last(&buf->list_entry, &pkt->buf)) {
 			size = CMDQ_CMD_BUFFER_SIZE - pkt->avail_buf_size;
-		} else if (cnt > 2 && !(curr_pa >= buf->pa_base &&
+		//#ifndef OPLUS_BUG_STABILITY
+		/*} else if (cnt > 2 && !(curr_pa >= buf->pa_base &&
 			curr_pa < buf->pa_base + CMDQ_BUF_ALLOC_SIZE)) {
 			cmdq_util_msg(
 				"buffer %u va:0x%p pa:%pa %#018llx (skip detail) %#018llx",
@@ -2330,7 +2374,8 @@ s32 cmdq_pkt_dump_buf(struct cmdq_pkt *pkt, dma_addr_t curr_pa)
 				*((u64 *)(buf->va_base +
 				CMDQ_CMD_BUFFER_SIZE - CMDQ_INST_SIZE)));
 			cnt++;
-			continue;
+			continue;*/
+		//#endif
 		} else {
 			size = CMDQ_CMD_BUFFER_SIZE;
 		}

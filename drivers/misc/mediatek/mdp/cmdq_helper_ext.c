@@ -42,6 +42,10 @@
 #include <cmdq-sec.h>
 #endif
 
+#if defined(CONFIG_MACH_MT6853)
+#include <soc/mediatek/smi.h>
+#endif
+
 #define CMDQ_GET_COOKIE_CNT(thread) \
 	(CMDQ_REG_GET32(CMDQ_THR_EXEC_CNT(thread)) & CMDQ_MAX_COOKIE_VALUE)
 
@@ -78,6 +82,7 @@ static struct cmdq_client *cmdq_entry;
 
 static struct cmdq_base *cmdq_client_base;
 static atomic_t cmdq_thread_usage;
+static atomic_t cmdq_thread_usage_clk;
 
 static wait_queue_head_t *cmdq_wait_queue; /* task done notify */
 static struct ContextStruct cmdq_ctx; /* cmdq driver context */
@@ -1769,6 +1774,7 @@ int cmdqCoreAllocWriteAddress(u32 count, dma_addr_t *paStart,
 			break;
 		}
 
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		/* clear buffer content */
 		do {
 			u32 *pInt = (u32 *) pWriteAddr->va;
@@ -1782,6 +1788,7 @@ int cmdqCoreAllocWriteAddress(u32 count, dma_addr_t *paStart,
 				smp_mb();
 			}
 		} while (0);
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 		/* assign output pa */
 		*paStart = pWriteAddr->pa;
@@ -3347,6 +3354,12 @@ static void cmdq_core_group_clk_cb(bool enable,
 				cmdq_core_group_clk_off(index, engine_clk);
 		}
 	}
+
+#if defined(CONFIG_MACH_MT6853)
+	if ((engine_flag & CMDQ_ENG_MDP_GROUP_BITS) && enable)
+		smi_larb_port_check();
+#endif
+
 }
 
 bool cmdq_thread_in_use(void)
@@ -3370,6 +3383,14 @@ static void cmdq_core_clk_enable(struct cmdqRecStruct *handle)
 				handle->pkt->cl)->chan);
 	}
 
+	if (!handle->secData.is_secure) {
+		s32 clk_cnt = atomic_inc_return(&cmdq_thread_usage_clk);
+
+		if (clk_cnt == 1)
+			cmdq_mbox_enable(((struct cmdq_client *)
+				handle->pkt->cl)->chan);
+	}
+
 	cmdq_core_group_clk_cb(true, handle->engineFlag, handle->engine_clk);
 }
 
@@ -3378,6 +3399,16 @@ static void cmdq_core_clk_disable(struct cmdqRecStruct *handle)
 	s32 clock_count;
 
 	cmdq_core_group_clk_cb(false, handle->engineFlag, handle->engine_clk);
+
+	if (!handle->secData.is_secure) {
+		s32 clk_cnt = atomic_dec_return(&cmdq_thread_usage_clk);
+		if (clk_cnt == 0)
+			cmdq_mbox_disable(((struct cmdq_client *)
+				handle->pkt->cl)->chan);
+		else if (clk_cnt < 0)
+			CMDQ_ERR("disable clock %s error usage:%d\n",
+				__func__, clk_cnt);
+	}
 
 	clock_count = atomic_dec_return(&cmdq_thread_usage);
 

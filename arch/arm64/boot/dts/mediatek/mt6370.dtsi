@@ -15,8 +15,8 @@
 	mt6370_pmu: mt6370_pmu_dts {
 		interrupt-controller;
 		#interrupt-cells = <1>;
-		mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
-		mt6370,intr_gpio = <&pio 3 0x0>; /* GPIO */
+		//mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
+		//mt6370,intr_gpio = <&pio 3 0x0>; /* GPIO */
 		core {
 			compatible = "mediatek,mt6370_pmu_core";
 			interrupt-names = "otp", "vdda_ovp", "vdda_uv";
@@ -36,7 +36,11 @@
 			compatible = "mediatek,mt6370_pmu_charger";
 			interrupt-names = "chg_mivr", "chg_aiclmeasi",
 				"attachi", "ovpctrl_uvp_d_evt", "chg_wdtmri",
-				"chg_vbusov", "chg_tmri", "chg_treg", "dcdti";
+//#ifndef VENDOR_EDIT
+//				"chg_tmri", "chg_treg", "dcdti";
+//#else
+				"chg_tmri", "chg_treg", "dcdti", "bst_olpi";
+//#endif
 			charger_name = "primary_chg";
 			load_switch_name = "primary_load_switch";
 			ichg = <2000000>;	/* uA */
@@ -54,12 +58,12 @@
 			lbp_dt = <1>;		/* 0: 10ms, 1: 20ms */
 						/* 2: 40ms, 3: 500us */
 			/* with it: don't check 1.2v while PD/SD during BC12 */
-			/* disable_vlgc; */
+			disable_vlgc;
 			/* with it: enable fast unknown TA detection */
-			/* fast_unknown_ta_dect; */
-			/* enable_polling; */
+			fast_unknown_ta_dect;
+			/* enable_polling; */	/* is this charger needs polling */
 			/* with it: do post aicl measure */
-			/* post_aicl; */
+			post_aicl;
 		};
 		mt6370_pmu_fled1 {
 			compatible = "mediatek,mt6370_pmu_fled1";

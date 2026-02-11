@@ -146,6 +146,15 @@ extern int proc_pid_status(struct seq_file *, struct pid_namespace *,
 			   struct pid *, struct task_struct *);
 extern int proc_pid_statm(struct seq_file *, struct pid_namespace *,
 			  struct pid *, struct task_struct *);
+#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
+extern int proc_pid_search_two_way(struct seq_file *m, struct pid_namespace *ns,
+			struct pid *pid, struct task_struct *task);
+#endif
+
+#ifdef OPLUS_FEATURE_PERFORMANCE
+extern int proc_pid_statm_as(struct seq_file *m, struct pid_namespace *ns,
+			     struct pid *pid, struct task_struct *task);
+#endif /* OPLUS_FEATURE_PERFORMANCE */
 
 /*
  * base.c

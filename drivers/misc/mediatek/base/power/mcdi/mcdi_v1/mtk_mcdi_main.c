@@ -46,12 +46,19 @@
 #include <trace/events/mtk_idle_event.h>
 #include <linux/irqchip/mtk-gic-extend.h>
 
+//#ifdef OPLUS_BUG_STABILITY
+#include <soc/oppo/oppo_project.h>
+//#endif /*OPLUS_BUG_STABILITY*/
+
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
 
 static unsigned long mcdi_cnt_wfi[NF_CPU];
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
+//#ifdef OPLUS_BUG_STABILITY
+static int need_skip_coreoff = 0;
+//#endif /*OPLUS_BUG_STABILITY*/
 
 void __iomem *mcdi_sysram_base;
 #define MCDI_SYSRAM (mcdi_sysram_base + MCDI_DEBUG_INFO_NON_REPLACE_OFFSET)
@@ -713,8 +720,12 @@ int mcdi_enter(int cpu)
 		aee_rr_rec_mcdi_val(cpu, MCDI_STATE_CPU_OFF << 16 | 0xff);
 
 		mcdi_cluster_counter_set_cpu_residency(cpu);
-
-		mtk_enter_idle_state(MTK_MCDI_CPU_MODE);
+//#ifdef OPLUS_BUG_STABILITY
+		if (!(need_skip_coreoff && (cpu == 0)))
+			mtk_enter_idle_state(MTK_MCDI_CPU_MODE);
+//#else
+//		mtk_enter_idle_state(MTK_MCDI_CPU_MODE);
+//#endif /*OPLUS_BUG_STABILITY*/
 
 		aee_rr_rec_mcdi_val(cpu, 0x0);
 
@@ -863,6 +874,19 @@ static void __init mcdi_pm_qos_init(void)
 
 static int __init mcdi_sysram_init(void)
 {
+//#ifdef OPLUS_BUG_STABILITY
+	unsigned int oplus_project = get_project();
+	switch(oplus_project) {
+	case 18531:
+	case 18561:
+	case 18161:
+		need_skip_coreoff = 1;
+		pr_info("%s: skip cpu0 core off for project %d\n", __func__, oplus_project);
+		break;
+	default:
+		break;
+	}
+//#endif /*OPLUS_BUG_STABILITY*/
 	/* of init */
 	mcdi_of_init(&mcdi_sysram_base);
 

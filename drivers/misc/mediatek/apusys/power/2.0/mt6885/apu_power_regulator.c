@@ -136,6 +136,7 @@ int enable_regulator(enum DVFS_BUCK buck)
 			LOG_ERR("regulator_enable vvpu_reg_id failed\n");
 			return ret;
 		} else {
+			regulator_set_mode(vvpu_reg_id, REGULATOR_MODE_FAST);
 			LOG_DBG("enable vvpu success\n");
 		}
 
@@ -151,6 +152,7 @@ int enable_regulator(enum DVFS_BUCK buck)
 			LOG_ERR("regulator_enable vmdla_reg_id failed\n");
 			return ret;
 		} else {
+			regulator_set_mode(vmdla_reg_id, REGULATOR_MODE_FAST);
 			LOG_DBG("enable vmdla success\n");
 		}
 

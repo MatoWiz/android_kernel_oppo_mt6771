@@ -194,10 +194,12 @@ signed int battery_meter_get_battery_temperature(void)
 	return battery_get_bat_temperature();
 }
 
+#ifndef CONFIG_OPLUS_CHARGER_MTK6785
 signed int battery_meter_get_charger_voltage(void)
 {
 	return battery_get_vbus();
 }
+#endif
 
 unsigned long BAT_Get_Battery_Current(int polling_mode)
 {

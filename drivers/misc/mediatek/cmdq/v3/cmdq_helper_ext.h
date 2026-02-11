@@ -538,6 +538,7 @@ struct WriteAddrStruct {
 	void *va;
 	dma_addr_t pa;
 	pid_t user;
+	bool pool;
 };
 
 /* resource unit between each module */
@@ -855,9 +856,11 @@ s32 cmdq_core_save_first_dump(const char *string, ...);
 
 /* Allocate/Free HW use buffer, e.g. command buffer forCMDQ HW */
 void *cmdq_core_alloc_hw_buffer_clt(struct device *dev, size_t size,
-	dma_addr_t *dma_handle, const gfp_t flag, enum CMDQ_CLT_ENUM clt);
+	dma_addr_t *dma_handle, const gfp_t flag, enum CMDQ_CLT_ENUM clt,
+	bool *pool);
 void cmdq_core_free_hw_buffer_clt(struct device *dev, size_t size,
-	void *cpu_addr, dma_addr_t dma_handle, enum CMDQ_CLT_ENUM clt);
+	void *cpu_addr, dma_addr_t dma_handle, enum CMDQ_CLT_ENUM clt,
+	bool pool);
 void *cmdq_core_alloc_hw_buffer(struct device *dev,
 	size_t size, dma_addr_t *dma_handle, const gfp_t flag);
 void cmdq_core_free_hw_buffer(struct device *dev, size_t size,
@@ -1005,6 +1008,8 @@ s32 cmdq_pkt_flush_async_ex(struct cmdqRecStruct *handle,
 	CmdqAsyncFlushCB cb, u64 user_data, bool auto_release);
 
 s32 cmdq_pkt_stop(struct cmdqRecStruct *handle);
+
+void cmdq_core_dump_active(void);
 
 /* mailbox helper functions */
 

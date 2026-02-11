@@ -22,23 +22,31 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/dw9718taf
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898122af
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/dw9800waf
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/dw9800af
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/fp5516af
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu64253af
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898212xdaf/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu64253gwzaf
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63165af/inc
 else
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63169af/inc
 endif
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/timer/timesync/
 
 ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN_CFILES += main_lens.c
-
+MAIN_CFILES  += common/dw9718taf/DW9718TAF.c
+MAIN_CFILES  += common/dw9800af/DW9800AF.c
 MAIN_CFILES  += common/bu64253gwzaf/BU64253GWZAF.c
 MAIN_CFILES  += common/fp5510e2af/FP5510E2AF.c
 MAIN_CFILES  += common/bu6424af/BU6424AF.c
 MAIN_CFILES  += common/bu6429af/BU6429AF.c
+MAIN_CFILES  += common/bu64253af/BU64253AF.c
 MAIN_CFILES  += common/bu6429af/bu64748af.c
 MAIN_CFILES  += common/bu6429af/bu64748_function.c
 MAIN_CFILES += common/dw9714af/DW9714AF.c
@@ -66,6 +74,10 @@ MAIN_CFILES  += common/ov5645af/OV5645AF.c
 MAIN_CFILES  += common/ad5820af/AD5820AF.c
 MAIN_CFILES  += common/wv511aaf/WV511AAF.c
 MAIN_CFILES  += common/ak7371af/AK7371AF.c
+ifeq ($(CONFIG_MTK_LENS_FP5516AF_SUPPORT), y)
+MAIN_CFILES  += common/fp5516af/FP5516AF.c
+endif
+MAIN_CFILES  += common/ak7374af/AK7374AF.c
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
 MAIN_CFILES  += common/bu63165af/BU63165AF.c
 MAIN_CFILES  += common/bu63165af/OIS_func.c
@@ -87,6 +99,7 @@ obj-y  += main_lens.o
 obj-y  += common/fp5510e2af/
 obj-y  += common/bu6424af/
 obj-y  += common/bu6429af/
+obj-y  += common/bu64253af/
 obj-y  += common/bu64748af/
 obj-y  += common/dw9714af/
 obj-y  += common/dw9800waf/
@@ -110,11 +123,17 @@ obj-y  += common/lc898122af/
 obj-y += common/ov5645af/
 obj-y  += common/wv511aaf/
 obj-y  += common/ak7371af/
+ifeq ($(CONFIG_MTK_LENS_FP5516AF_SUPPORT),y)
+obj-y  += common/fp5516af/
+endif
+obj-y  += common/ak7374af/
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
   obj-y  += common/bu63165af/
 else
   obj-y  += common/bu63169af/
 endif
 obj-y  += common/bu64253gwzaf/
+obj-y  += common/dw9800af/
+obj-y  += common/dw9718taf/
 
 endif

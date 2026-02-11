@@ -51,6 +51,11 @@ struct mtk_codec_ops {
 	int (*set_hp_impedance_ctl)(bool enable);
 };
 
+#ifdef OPLUS_BUG_COMPATIBILITY
+bool is_awinic_pa_type(void);
+bool is_nxp_pa_type(void);
+#endif /* OPLUS_BUG_COMPATIBILITY */
+
 void audckbufEnable(bool enable);
 
 void SetAnalogSuspend(bool bEnable);

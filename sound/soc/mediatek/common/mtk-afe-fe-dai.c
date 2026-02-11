@@ -256,6 +256,9 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 		else
 			ret = snd_pcm_lib_malloc_pages(substream,
 				params_buffer_bytes(params));
+        #ifdef OPLUS_BUG_COMPATIBILITY
+        dev_info(afe->dev, "use dsp share mem %d\n", memif->use_adsp_share_mem);
+        #endif /* OPLUS_BUG_COMPATIBILITY */
 #else
 		ret = snd_pcm_lib_malloc_pages(substream,
 					       params_buffer_bytes(params));

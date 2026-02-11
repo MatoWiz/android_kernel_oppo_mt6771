@@ -395,7 +395,7 @@ unsigned int spm_sodi_output_log(struct wake_status *wakesta,
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-				so_warn(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, %d, %08x\n",
+			/*	so_warn(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, %d, %08x\n",
 						buf, spm_read(SPM_PASR_DPD_0),
 						spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON),
@@ -411,7 +411,7 @@ unsigned int spm_sodi_output_log(struct wake_status *wakesta,
 						wakesta->event_reg,
 						wakesta->isr,
 						spm_get_resource_usage(),
-						need_log_out, wakesta->req_sta);
+						need_log_out, wakesta->req_sta);*/
 			}
 			logout_sodi_cnt = 0;
 			logout_selfrefresh_cnt = 0;

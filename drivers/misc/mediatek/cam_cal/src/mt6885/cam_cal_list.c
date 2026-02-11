@@ -19,6 +19,20 @@
 #define MAX_EEPROM_SIZE_16K 0x4000
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+	#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	{OV64B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX616_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX615_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX319_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{OV02B10_SENSOR_ID, 0xA4, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX686_SENSOR_ID_20601, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{OV32A1Q_SENSOR_ID_20601, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{HI846_SENSOR_ID_20601, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{GC2385_SENSOR_ID_20601, 0xA4, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX686_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{HI846_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{S5KGD1SP_SENSOR_ID, 0xA8, Common_read_region},
+    #else
 	/*Below is commom sensor */
 	{IMX586_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{IMX576_SENSOR_ID, 0xA2, Common_read_region},
@@ -35,6 +49,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX350_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX386_MONO_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX499_SENSOR_ID, 0xA0, Common_read_region},
+	#endif
 	{S5KJD1_SENSOR_ID, 0xB0, Common_read_region, DEFAULT_MAX_EEPROM_SIZE_8K,
 		DW9763_write_region},
 	/*  ADD before this line */

@@ -43,6 +43,10 @@
 
 #include "phy-mtk-ssusb-reg.h"
 
+#ifdef OPLUS_FEATURE_CHG_BASIC
+extern int otg_is_exist;
+#endif /* OPLUS_FEATURE_CHG_BASIC */
+
 static DEFINE_MUTEX(prepare_lock);
 
 enum mt_phy_version {
@@ -387,10 +391,23 @@ static void usb_phy_tuning(struct mtk_phy_instance *instance)
 		}
 		instance->phy_tuning.inited = true;
 	}
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	if(otg_is_exist == 1) {
+		printk("start otg usb_phy_tuning\n");
+		u2_vrt_ref = 4;
+		u2_term_ref = 4;
+		u2_enhance = 2;
+	}
+	else {
+		u2_vrt_ref = instance->phy_tuning.u2_vrt_ref;
+		u2_term_ref = instance->phy_tuning.u2_term_ref;
+		u2_enhance = instance->phy_tuning.u2_enhance;
+	}
+#else
 	u2_vrt_ref = instance->phy_tuning.u2_vrt_ref;
 	u2_term_ref = instance->phy_tuning.u2_term_ref;
 	u2_enhance = instance->phy_tuning.u2_enhance;
-
+#endif
 	if (u2_vrt_ref != -1) {
 		if (u2_vrt_ref <= VAL_MAX_WIDTH_3) {
 			u3phywrite32(U3D_USBPHYACR1,

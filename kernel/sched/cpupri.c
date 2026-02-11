@@ -50,6 +50,9 @@ static int convert_prio(int prio)
 	return cpupri;
 }
 
+#if defined(OPLUS_FEATURE_UIFIRST)
+extern void drop_ux_task_cpus(struct task_struct *p, struct cpumask *lowest_mask);
+#endif /* OPLUS_FEATURE_UIFIRST */
 /**
  * cpupri_find - find the best (lowest-pri) CPU in the system
  * @cp: The cpupri context
@@ -65,6 +68,9 @@ static int convert_prio(int prio)
  *
  * Return: (int)bool - CPUs were found
  */
+extern bool ux_task_misfit(struct task_struct *p, int cpu);
+extern int ux_prefer_cpu[];
+extern void kick_min_cpu_from_mask(struct cpumask *lowest_mask);
 int cpupri_find(struct cpupri *cp, struct task_struct *p,
 		struct cpumask *lowest_mask)
 {
@@ -108,6 +114,14 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
 
 		if (lowest_mask) {
 			cpumask_and(lowest_mask, &p->cpus_allowed, vec->mask);
+#if defined(OPLUS_FEATURE_UIFIRST)
+			if (sysctl_uifirst_enabled)
+				drop_ux_task_cpus(p, lowest_mask);
+#if defined (CONFIG_SCHED_WALT) && defined (OPLUS_FEATURE_UIFIRST)
+		if (sysctl_uifirst_enabled && sysctl_slide_boost_enabled && ux_task_misfit(p, task_cpu(p)))
+			kick_min_cpu_from_mask(lowest_mask);
+#endif
+#endif /* OPLUS_FEATURE_UIFIRST */
 
 			/*
 			 * We have to ensure that we have at least one bit

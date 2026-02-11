@@ -17,8 +17,17 @@
 #include "kd_imgsensor.h"
 
 #define IMX586_MAX_EEPROM_SIZE 0x24D0
+#define MAX_EEPROM_SIZE_16K 0x4000
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	{IMX682_SENSOR_ID, 0xA0, Common_read_region},
+	{S5KGM1SP_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX471_SENSOR_ID1, 0xA8, Common_read_region},
+	{OV8856_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{OV02B10_SENSOR_ID, 0xA4, Common_read_region},
+#endif
 	/*Below is commom sensor */
 	{IMX519_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K2T7SP_SENSOR_ID, 0xA4, Common_read_region},

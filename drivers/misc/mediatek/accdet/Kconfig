@@ -120,3 +120,13 @@ config TS3A225E_ACCDET
 	  If you want to use TS3A225E
 	  say Y.
 	  If unsure, say N.
+
+config HSKEY_BLOCK
+	bool "Block hskey for 1s"
+	default n
+
+#ifdef OPLUS_ARCH_EXTENDS
+config OPLUS_FEATURE_ACCDET_CLOSE_INTERNAL_EINT
+	bool "close internal eint resitance"
+	default n
+#endif /* OPLUS_ARCH_EXTENDS */

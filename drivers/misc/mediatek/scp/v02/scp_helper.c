@@ -479,7 +479,8 @@ static void scp_A_set_ready(void)
 static void scp_wait_ready_timeout(unsigned long data)
 {
 #if SCP_RECOVERY_SUPPORT
-	if (scp_timeout_times < 10)
+	//if (scp_timeout_times < 10)
+	if (scp_timeout_times < 3)
 		scp_send_reset_wq(RESET_TYPE_TIMEOUT);
 #endif
 	scp_timeout_times++;

@@ -186,7 +186,11 @@ void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio,
 	struct page_pid_logger *ppl, tmp;
 	unsigned long idx;
 
-	if (!mtk_btag_pagelogger || !bio || !bvec)
+//#ifdef OPLUS_BUG_STABILITY
+	if (!mtk_btag_pagelogger || !bio || !bvec || !bvec->bv_page)
+//#else
+	//if (!mtk_btag_pagelogger || !bio || !bvec)
+//#endif /*OPLUS_BUG_STABILITY*/
 		return;
 
 	idx = mtk_btag_pidlog_index(bvec->bv_page);

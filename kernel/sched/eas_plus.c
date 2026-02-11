@@ -11,7 +11,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 #include <linux/stop_machine.h>
+#ifdef OPLUS_FEATURE_SPECIALOPT
+inline unsigned long task_util(struct task_struct *p);
+#else
 static inline unsigned long task_util(struct task_struct *p);
+#endif
 static int select_max_spare_capacity(struct task_struct *p, int target);
 int cpu_eff_tp = 1024;
 unsigned long long big_cpu_eff_tp = 1024;
@@ -87,12 +91,12 @@ update_system_overutilized(struct lb_env *env)
 				continue;
 
 			group_util += cpu_util(i);
-			if (cpu_overutilized(i)) {
+			/*if (cpu_overutilized(i)) {
 				if (capacity_orig_of(i) == min_capacity) {
 					intra_overutil = true;
 					break;
 				}
-			}
+			}*/
 		}
 
 		/*
@@ -812,6 +816,10 @@ static unsigned int aggressive_idle_pull(int this_cpu)
 	 */
 	if (hmp_cpu_is_slowest(this_cpu)) {
 		hmp_slowest_idle_prefer_pull(this_cpu, &p, &target);
+#if defined(OPLUS_FEATURE_UIFIRST) && defined(CONFIG_SCHED_WALT)
+		if(p && sysctl_uifirst_enabled && sysctl_slide_boost_enabled && is_heavy_ux_task(p) && test_ux_task_cpu(task_cpu(p)))
+			goto done;
+#endif
 		if (p) {
 			trace_sched_hmp_migrate(p, this_cpu, 0x10);
 			moved = migrate_runnable_task(p, this_cpu, target);

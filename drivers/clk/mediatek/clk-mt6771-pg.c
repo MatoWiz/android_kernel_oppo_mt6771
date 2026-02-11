@@ -28,6 +28,10 @@
 
 #include <dt-bindings/clock/mt6771-clk.h>
 
+//#ifdef VENDOR_EDIT
+#include <soc/oplus/system/oppo_project.h>
+//#endif
+
 /*#define TOPAXI_PROTECT_LOCK*/
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
@@ -4491,8 +4495,15 @@ void subsys_if_on(void)
 			dump_cg_state(vdec_clks[i]);
 		ret++;
 	}
-	if (ret > 0)
-		BUG_ON(1);
+//#ifdef VENDOR_EDIT
+	if(get_eng_version() == 0) {
+		if (ret > 0)
+			WARN_ON(1);
+	} else {
+		if (ret > 0)
+			BUG_ON(1);
+	}
+//#endif
 #if 0
 	for (i = 0; i < num; i++)
 		dump_cg_state(clks[i]);

@@ -113,9 +113,10 @@ int ccu_allocate_mva(uint32_t *mva, void *va,
 		return ret;
 	}
 
-	*handle = _ccu_ion_alloc(_ccu_ion_client,
-			ION_HEAP_MULTIMEDIA_MAP_MVA_MASK,
-			(unsigned long)va, buffer_size, false, false);
+	// *handle = _ccu_ion_alloc(_ccu_ion_client,
+	// ION_HEAP_MULTIMEDIA_MAP_MVA_MASK,
+	// (unsigned long)va, buffer_size, false, false);
+
 
 	/*i2c dma buffer is PAGE_SIZE(4096B)*/
 
@@ -227,24 +228,29 @@ int ccu_allocate_mem(struct CcuMemHandle *memHandle, int size, bool cached)
 
 int ccu_deallocate_mem(struct CcuMemHandle *memHandle)
 {
-	LOG_DBG_MUST("free import ion: share_fd %d",
-		memHandle->meminfo.shareFd);
-	LOG_DBG_MUST("0x%lx\n", memHandle->meminfo.va);
+	uint32_t idx = (memHandle->meminfo.cached != 0) ? 1 : 0;
 
+	LOG_DBG_MUST("free idx(%d) mva(0x%x) fd(0x%x)\n", idx,
+		ccu_buffer_handle[idx].meminfo.mva,
+		ccu_buffer_handle[idx].meminfo.shareFd);
+	if (ccu_buffer_handle[idx].ionHandleKd == 0) {
+		LOG_ERR("idx %d handle %d is empty\n", idx,
+			ccu_buffer_handle[idx].ionHandleKd);
+		return -EINVAL;
+	}
 	ion_unmap_kernel(_ccu_ion_client,
-		ccu_buffer_handle[memHandle->meminfo.cached].ionHandleKd);
+		ccu_buffer_handle[idx].ionHandleKd);
 	__close_fd(current->files,
-		ccu_buffer_handle[memHandle->meminfo.cached].meminfo.shareFd);
+		ccu_buffer_handle[idx].meminfo.shareFd);
 	ion_free(_ccu_ion_client,
-		ccu_buffer_handle[memHandle->meminfo.cached].ionHandleKd);
+		ccu_buffer_handle[idx].ionHandleKd);
 	if ((memHandle->meminfo.ion_log) && (memHandle->meminfo.size > ION_LOG_SIZE))  //10M
 		LOG_INF_MUST("ion free size = %d, caller = CCU\n", memHandle->meminfo.size);
 
-	memset(&(ccu_buffer_handle[memHandle->meminfo.cached]), 0,
+	memset(&(ccu_buffer_handle[idx]), 0,
 		sizeof(struct CcuMemHandle));
 
 	return 0;
-
 }
 
 static struct ion_handle *_ccu_ion_alloc(struct ion_client *client,

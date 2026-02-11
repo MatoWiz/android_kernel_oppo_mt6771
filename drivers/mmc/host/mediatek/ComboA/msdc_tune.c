@@ -223,6 +223,10 @@ int sdcard_hw_reset(struct mmc_host *mmc)
 	int ret = 0;
 
 	int level = 1;
+	static unsigned long tolerance_time = 0;
+
+	if (tolerance_time == 0)
+		tolerance_time = jiffies + 20*HZ;
 
 #ifdef CONFIG_GPIOLIB
 	level = __gpio_get_value(cd_gpio);
@@ -244,16 +248,20 @@ int sdcard_hw_reset(struct mmc_host *mmc)
 	mmc->ios.clock = 300000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	ret = mmc_hw_reset(mmc);
-	if (ret) {
-		if (++host->power_cycle_cnt
-			> MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS)
+
+	host->power_cycle_cnt++;
+	if (host->power_cycle_cnt > MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS) {
+		if (time_after(jiffies, tolerance_time)) {
+			host->power_cycle_cnt = 0;
+			tolerance_time = jiffies + 20*HZ;
+		} else {
+			host->power_cycle_cnt = 0;
+			tolerance_time = 0;
 			msdc_set_bad_card_and_remove(host);
-		pr_notice(
-			"msdc%d power reset (%d) failed, block_bad_card = %d\n",
+		}
+
+		pr_notice("msdc%d power reset (%d) failed, block_bad_card = %d\n",
 			host->id, host->power_cycle_cnt, host->block_bad_card);
-	} else {
-		host->power_cycle_cnt = 0;
-		pr_notice("msdc%d power reset success\n", host->id);
 	}
 
 	return ret;

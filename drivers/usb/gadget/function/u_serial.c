@@ -736,6 +736,12 @@ static int gs_start_io(struct gs_port *port)
 	int			status;
 	unsigned		started;
 
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	if(!port->port_usb) {
+		pr_err("%s: port->port_usb is a invalid device,disconnect it?\n",__func__);
+		return -ENODEV;
+	}
+#endif
 	/* Allocate RX and TX I/O buffers.  We can't easily do this much
 	 * earlier (with GFP_KERNEL) because the requests are coupled to
 	 * endpoints, as are the packet sizes we'll be using.  Different
@@ -1567,6 +1573,9 @@ void gserial_disconnect(struct gserial *gser)
 	port->port_line_coding = gser->port_line_coding;
 
 	port->port_usb = NULL;
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	pr_debug("%s port_usb NULL\n",__func__);
+#endif
 	gser->ioport = NULL;
 	if (port->port.count > 0 || port->openclose) {
 		wake_up_interruptible(&port->drain_wait);

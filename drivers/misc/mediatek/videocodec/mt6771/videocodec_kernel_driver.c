@@ -531,6 +531,8 @@ void vdec_polling_status(void)
 			u4Counter = 0;
 			WARN_ON(1);
 		}
+		if (u4Counter % 100 == 0)
+			msleep(20);
 	}
 	gi4DecWaitEMI = 0;
 	/* pr_debug("u4Counter %d\n", u4Counter); */

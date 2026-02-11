@@ -70,4 +70,7 @@ int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm);
 int disp_lcm_validate_roi(struct disp_lcm_handle *plcm,
 	int *x, int *y, int *w, int *h);
 int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter);
+#ifdef OPLUS_BUG_STABILITY
+int disp_lcm_oplus_set_lcm_cabc_cmd(struct disp_lcm_handle *plcm, void *handle, unsigned int level);
+#endif
 #endif

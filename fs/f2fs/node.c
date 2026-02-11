@@ -1924,8 +1924,12 @@ continue_unlock:
 				goto continue_unlock;
 			}
 
-			/* flush inline_data, if it's async context. */
-			if (do_balance && is_inline_node(page)) {
+			/* flush inline_data/inode, if it's async context. */
+			if (!do_balance)
+				goto write_node;
+
+			/* flush inline_data */
+			if (is_inline_node(page)) {
 				clear_inline_node(page);
 				unlock_page(page);
 				flush_inline_data(sbi, ino_of_node(page));
@@ -1939,6 +1943,7 @@ continue_unlock:
 					goto lock_node;
 			}
 
+write_node:
 			f2fs_wait_on_page_writeback(page, NODE, true, true);
 
 			if (!clear_page_dirty_for_io(page))
@@ -2039,9 +2044,7 @@ static int f2fs_write_node_pages(struct address_space *mapping,
 	f2fs_balance_fs_bg(sbi, true);
 
 	/* collect a number of dirty node pages and write together */
-	if (wbc->sync_mode != WB_SYNC_ALL &&
-			get_pages(sbi, F2FS_DIRTY_NODES) <
-					nr_pages_to_skip(sbi, NODE))
+	if (get_pages(sbi, F2FS_DIRTY_NODES) < nr_pages_to_skip(sbi, NODE))
 		goto skip_write;
 
 	if (wbc->sync_mode == WB_SYNC_ALL)

@@ -36,6 +36,11 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
 	struct mmc_host *host = dev_id;
 
 	host->trigger_card_event = true;
+
+#ifdef OPLUS_FEATURE_MMC_DRIVER
+	host->card_stuck_in_programing_status = 0;
+#endif
+
 	mmc_detect_change(host, msecs_to_jiffies(200));
 
 	return IRQ_HANDLED;

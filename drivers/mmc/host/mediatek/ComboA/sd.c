@@ -67,6 +67,11 @@
 #include "mmc/host/cmdq_hci.h"
 #endif
 
+//#if OPLUS_BUG_COMPATIBILITY
+//2020/10/30 reocvery mode open cmdq function for reocvery FBE failed
+#include <soc/oplus/system/oplus_project.h>
+//#endif /*OPLUS_BUG_COMPATIBILITY*/
+
 #include "dbg.h"
 
 #define CAPACITY_2G             (2 * 1024 * 1024 * 1024ULL)
@@ -1169,10 +1174,24 @@ static int check_enable_cqe(void)
 	 * Device will return switch error if flush cache
 	 * with cache disabled.
 	 */
-	if ((mode == RECOVERY_BOOT) ||
-		(mode == KERNEL_POWER_OFF_CHARGING_BOOT) ||
-		(mode == LOW_POWER_OFF_CHARGING_BOOT))
-		return 0;
+//#if OPLUS_BUG_COMPATIBILITY
+//2020/10/30 reocvery mode open cmdq function for reocvery FBE failed
+    if((get_project() == 0x206AC)){
+		if ((mode == KERNEL_POWER_OFF_CHARGING_BOOT) ||
+			(mode == LOW_POWER_OFF_CHARGING_BOOT))
+			return 0;
+	}else{
+		if ((mode == RECOVERY_BOOT) ||
+			(mode == KERNEL_POWER_OFF_CHARGING_BOOT) ||
+			(mode == LOW_POWER_OFF_CHARGING_BOOT))
+			return 0;
+	}
+//#else
+//	if ((mode == RECOVERY_BOOT) ||
+//		(mode == KERNEL_POWER_OFF_CHARGING_BOOT) ||
+//		(mode == LOW_POWER_OFF_CHARGING_BOOT))
+//		return 0;
+//#endif /*OPLUS_BUG_COMPATIBILITY*/
 
 	return 1;
 #else
@@ -4089,7 +4108,7 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 #endif
 		/* Retry legacy data read pass, clear autok pass flag */
 		if ((host->need_tune & TUNE_LEGACY_DATA_READ) &&
-			mrq->cmd->data) {
+			mrq->cmd->data && host->err_cmd == mrq->cmd->opcode) {
 			host->need_tune &= ~TUNE_LEGACY_DATA_READ;
 			host->need_tune &= ~TUNE_AUTOK_PASS;
 			host->reautok_times = 0;
@@ -4097,7 +4116,7 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 		}
 		/* Retry legacy data write pass, clear autok pass flag */
 		if ((host->need_tune & TUNE_LEGACY_DATA_WRITE) &&
-			mrq->cmd->data) {
+			mrq->cmd->data && host->err_cmd == mrq->cmd->opcode) {
 			host->need_tune &= ~TUNE_LEGACY_DATA_WRITE;
 			host->need_tune &= ~TUNE_AUTOK_PASS;
 			host->reautok_times = 0;
@@ -4594,9 +4613,17 @@ static void msdc_check_data_timeout(struct work_struct *work)
 	u32 intsts;
 	u32 wints = MSDC_INT_XFER_COMPL | MSDC_INT_DATTMO
 		| MSDC_INT_DATCRCERR | MSDC_INT_GPDCSERR | MSDC_INT_BDCSERR;
+	static unsigned long dma_data_to_tolerence_time = 0;
+	static unsigned int dma_data_to_count = 0;
 
 	if (!data || !mrq || !mmc)
 		return;
+
+	/* Time already pass by 20s when this function has called
+	 If there is dma data to in next 40s, set bad card */
+
+	if(dma_data_to_tolerence_time == 0)
+		dma_data_to_tolerence_time = jiffies + 40 * HZ;
 
 	pr_info("[%s]: XXX DMA Data Busy Timeout: %u ms, CMD<%d>",
 		__func__, host->data_timeout_ms, mrq->cmd->opcode);
@@ -4620,8 +4647,19 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		msdc_dma_clear(host);
 		msdc_reset_hw(host->id);
 		if (host->id == 1) {
+			dma_data_to_count++;
 			pr_info("msdc1 err, reset sdcard\n");
 			(void)sdcard_hw_reset(host->mmc);
+			if(dma_data_to_count >= 2){
+				if(time_after(jiffies, dma_data_to_tolerence_time)) {
+					dma_data_to_count = 1;
+					dma_data_to_tolerence_time = jiffies + 40*HZ;
+				} else {
+					dma_data_to_count = 0;
+					dma_data_to_tolerence_time = 0;
+					msdc_set_bad_card_and_remove(host);
+				}
+			}
 		}
 		tmo = jiffies + POLLING_BUSY;
 

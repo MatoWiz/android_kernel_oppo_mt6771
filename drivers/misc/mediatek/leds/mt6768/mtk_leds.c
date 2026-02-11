@@ -153,6 +153,9 @@ void mt_leds_wake_lock_init(void)
 	wakeup_source_init(&leds_suspend_lock, "leds wakelock");
 }
 
+#ifdef OPLUS_BUG_COMPATIBILITY
+int led_rm = 0;
+#endif
 struct cust_mt65xx_led *get_cust_led_dtsi(void)
 {
 	struct device_node *led_node = NULL;
@@ -206,6 +209,10 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 				pled_dtsi[i].name);
 			pled_dtsi[i].mode = 0;
 		}
+
+#ifdef OPLUS_BUG_COMPATIBILITY
+		ret = of_property_read_u32(led_node, "led_rm", &led_rm);
+#endif
 
 		ret =
 		    of_property_read_u32(led_node, "data",
@@ -882,12 +889,21 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 		level = (level * CONFIG_LIGHTNESS_MAPPING_VALUE) / 255;
 
 	backlight_debug_log(led_data->level, level);
+
+	#ifndef OPLUS_FEATURE_MULTIBITS_BL
 	disp_pq_notify_backlight_changed((((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT)
 					    - 1) * level + 127) / 255);
+	#else /* OPLUS_FEATURE_MULTIBITS_BL */
+	disp_pq_notify_backlight_changed(level);
+	#endif /* OPLUS_FEATURE_MULTIBITS_BL */
 #ifdef CONFIG_MTK_AAL_SUPPORT
+	#ifndef OPLUS_FEATURE_MULTIBITS_BL
 	disp_aal_notify_backlight_changed((((1 <<
 					MT_LED_INTERNAL_LEVEL_BIT_CNT)
 					    - 1) * level + 127) / 255);
+	#else /* OPLUS_FEATURE_MULTIBITS_BL */
+	disp_aal_notify_backlight_changed(level);
+	#endif /* OPLUS_FEATURE_MULTIBITS_BL */
 #else
 	if (led_data->cust.mode == MT65XX_LED_MODE_CUST_BLS_PWM)
 		mt_mt65xx_led_set_cust(&led_data->cust,
