@@ -140,7 +140,7 @@ void chrdet_int_handler(void)
 /*
  * PMIC Interrupt service
  */
-void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
+void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
 {
 	int ret;
 	unsigned int irq;
@@ -186,7 +186,7 @@ void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 		__func__, intNo, en, desc ? desc->depth : -1);
 }
 
-void pmic_register_interrupt_callback(enum PMIC_IRQ_ENUM intNo,
+void pmic_register_interrupt_callback(unsigned int intNo,
 		void (EINT_FUNC_PTR) (void))
 {
 	struct legacy_pmic_callback *pmic_cb = &pmic_cbs[intNo];
@@ -399,4 +399,3 @@ void PMIC_EINT_SETTING(struct platform_device *pdev)
 MODULE_AUTHOR("Jeter Chen");
 MODULE_DESCRIPTION("MT PMIC Interrupt Driver");
 MODULE_LICENSE("GPL");
-

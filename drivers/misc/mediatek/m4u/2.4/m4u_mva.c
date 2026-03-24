@@ -318,7 +318,7 @@ void m4u_mvaGraph_dump(void)
 		end = start + size - 1;
 		/* DO NOT call aee here directly to avoid recursive dump. */
 		if (nr == 0 || end <= start) {
-			M4ULOG_HIGH("%s err: nr=%d, start=0x08x\n",
+			M4ULOG_HIGH("%s err: nr=%d, start=0x%08x\n",
 				__func__, nr, start);
 			break;
 		}

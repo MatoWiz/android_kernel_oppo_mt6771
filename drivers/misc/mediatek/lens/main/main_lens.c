@@ -324,7 +324,7 @@ void AFRegulatorCtrl(int Stage)
             return;
 	}
 
-	LOG_INF("AFIOC_S_SETPOWERCTRL Stage %p\n", Stage);
+	LOG_INF("AFIOC_S_SETPOWERCTRL Stage %d\n", Stage);
 	if (Stage == 0) {
 		LOG_INF("AFRegulatorCtrl(%d) init\n", Stage);
 	} else if (Stage == 1) {
