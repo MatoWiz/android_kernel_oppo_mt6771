@@ -1,0 +1,27 @@
+menu "OPLUS charger stubs"
+
+config OPLUS_CHARGER
+bool "OPLUS_CHARGER"
+default n
+
+config OPLUS_CHARGER_MTK
+bool "OPLUS_CHARGER_MTK"
+depends on OPLUS_CHARGER
+default n
+
+config OPLUS_CHARGER_MTK6771
+bool "OPLUS_CHARGER_MTK6771"
+depends on OPLUS_CHARGER_MTK
+default n
+
+config OPLUS_CHARGER_BQ24190
+bool "OPLUS_CHARGER_BQ24190"
+depends on OPLUS_CHARGER
+default n
+
+config OPLUS_CHARGER_MT6370_TYPEC
+bool "OPLUS_CHARGER_MT6370_TYPEC"
+depends on OPLUS_CHARGER
+default n
+
+endmenu

@@ -1,0 +1,32 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+#ifndef _OPPO_TOUCHSCREEN_TP_DEVICES_H_
+#define _OPPO_TOUCHSCREEN_TP_DEVICES_H_
+
+struct tp_dev_name {
+int type;
+const char *name;
+};
+
+enum {
+TP_OFILM,
+TP_BIEL,
+TP_TRULY,
+TP_BOE,
+TP_G2Y,
+TP_TPK,
+TP_JDI,
+TP_TIANMA,
+TP_SAMSUNG,
+TP_DSJM,
+TP_BOE_B8,
+TP_INNOLUX,
+TP_HIMAX_DPT,
+TP_AUO,
+TP_DEPUTE,
+TP_HUAXING,
+TP_HLT,
+TP_DJN,
+TP_UNKNOWN,
+};
+
+#endif

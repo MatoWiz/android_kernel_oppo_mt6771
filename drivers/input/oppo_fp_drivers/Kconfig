@@ -1,0 +1,28 @@
+menu "OPPO fingerprint drivers"
+
+config OPPO_FINGERPRINT_MTK
+bool "OPPO fingerprint MTK"
+depends on OPPO_FINGERPRINT
+default y
+
+config OPPO_FINGERPRINT_GOODIX_OPTICAL
+bool "OPPO fingerprint Goodix optical"
+depends on OPPO_FINGERPRINT
+default y
+
+config OPPO_FINGERPRINT_GOODIX
+bool "OPPO fingerprint Goodix"
+depends on OPPO_FINGERPRINT
+default y
+
+config OPPO_FINGERPRINT_FPC
+bool "OPPO fingerprint FPC"
+depends on OPPO_FINGERPRINT
+default y
+
+config OPPO_FINGERPRINT_EGIS_OPTICAL
+bool "OPPO fingerprint Egis optical"
+depends on OPPO_FINGERPRINT
+default y
+
+endmenu
