@@ -37,6 +37,7 @@
 #define WS_CNT_CDSP (1<<6)
 #define WS_CNT_SLPI (1<<7)
 #define WS_CNT_SENSOR (1<<8)
+#define WS_CNT_OTHER (1<<9)
 
 #define WS_CNT_GLINK (1<<13)
 #define WS_CNT_ABORT (1<<14)

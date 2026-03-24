@@ -591,14 +591,15 @@ static int aw3642_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	/* register flashlight device */
 	if (pdata->channel_num) {
-		for (i = 0; i < pdata->channel_num; i++)
+		for (i = 0; i < pdata->channel_num; i++) {
 			pr_err("Probe start. 5555 1111\n");
 			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &aw3642_ops)) {
 				err = -EFAULT;
 				goto err_free;
 			}
+		}
 	} else {
-	pr_err("Probe start. 5555  2222\n");
+		pr_err("Probe start. 5555  2222\n");
 		if (flashlight_dev_register(AW3642_NAME, &aw3642_ops)) {
 			err = -EFAULT;
 			goto err_free;
@@ -675,4 +676,3 @@ module_i2c_driver(aw3642_i2c_driver);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Xi Chen <xixi.chen@mediatek.com>");
 MODULE_DESCRIPTION("MTK Flashlight AW3642 Driver");
-

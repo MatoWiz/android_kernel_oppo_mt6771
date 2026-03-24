@@ -85,7 +85,7 @@ bool com_is_enable(void)
 		return true;
 }
 
-unsigned int get_meta_com_type(void)
+enum meta_com_type get_meta_com_type(void)
 {
 	return g_meta_com_type;
 }
