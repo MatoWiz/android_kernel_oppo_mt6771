@@ -1,0 +1,7 @@
+menu "OPPO sensor devinfo 2.0"
+
+config OPLUS_SENSOR_DEVINFO_V2
+bool "OPPO sensor devinfo v2"
+default y
+
+endmenu

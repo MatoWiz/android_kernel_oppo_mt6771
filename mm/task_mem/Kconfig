@@ -1,0 +1,3 @@
+config DUMP_TASKS_MEM
+bool "Dump task memory"
+default n

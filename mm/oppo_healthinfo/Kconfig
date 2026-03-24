@@ -1,0 +1,12 @@
+menu "OPPO healthinfo"
+
+config OPPO_HEALTHINFO
+bool "OPPO healthinfo support"
+default y
+
+config OPPO_MEM_MONITOR
+bool "OPPO memory monitor"
+depends on OPPO_HEALTHINFO
+default y
+
+endmenu

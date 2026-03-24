@@ -1,0 +1,5 @@
+menu "stub"
+config OPLUS_STUB_ITEM
+bool "stub"
+default y
+endmenu
