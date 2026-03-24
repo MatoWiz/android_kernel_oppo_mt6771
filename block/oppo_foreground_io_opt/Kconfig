@@ -1,0 +1,5 @@
+config OPPO_FG_IO_OPT
+bool "OPPO foreground IO optimization"
+default y
+help
+  Enables OPPO foreground/background IO queue tuning helpers.

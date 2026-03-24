@@ -1,0 +1,7 @@
+menu "OPPO svelte"
+
+config OPPO_SVELTE
+bool "OPPO svelte"
+default y
+
+endmenu

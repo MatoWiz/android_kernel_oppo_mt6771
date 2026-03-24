@@ -1,0 +1,7 @@
+menu "proc oppo healthinfo"
+
+config PROC_OPPO_HEALTHINFO
+bool "proc oppo healthinfo"
+default y
+
+endmenu

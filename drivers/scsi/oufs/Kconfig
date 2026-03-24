@@ -1,0 +1,8 @@
+menu "OPPO UFS extensions"
+
+config OPLUS_UFS_EXT
+bool "OPPO UFS extension stub"
+depends on SCSI_UFSHCD
+default y
+
+endmenu

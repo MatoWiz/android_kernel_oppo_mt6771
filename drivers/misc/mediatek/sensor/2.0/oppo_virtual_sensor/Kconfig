@@ -1,0 +1,7 @@
+menu "OPPO virtual sensors 2.0"
+
+config OPLUS_VIRTUAL_SENSOR_V2
+bool "OPPO virtual sensor v2"
+default y
+
+endmenu

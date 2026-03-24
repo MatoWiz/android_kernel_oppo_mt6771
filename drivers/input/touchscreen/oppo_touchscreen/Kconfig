@@ -1,0 +1,9 @@
+menu "OPPO Touchscreen"
+
+config TOUCHPANEL_OPPO
+bool "OPPO Touchpanel support"
+default y
+help
+  Placeholder option for missing vendor touchscreen tree.
+
+endmenu

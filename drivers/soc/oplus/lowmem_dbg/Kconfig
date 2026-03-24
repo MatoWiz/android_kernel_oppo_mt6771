@@ -1,0 +1,5 @@
+menu "OPLUS lowmem debug"
+config OPLUS_FEATURE_LOWMEM_DBG
+bool "OPLUS LOWMEM DBG"
+default n
+endmenu
