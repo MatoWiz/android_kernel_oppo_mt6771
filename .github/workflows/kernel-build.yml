@@ -1,0 +1,59 @@
+name: Build Kernel (Ubuntu 22.04)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc \
+            bison \
+            build-essential \
+            ccache \
+            flex \
+            gcc-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu \
+            libelf-dev \
+            libssl-dev \
+            dwarves
+
+      - name: Configure kernel
+        run: |
+          mkdir -p out
+          make \
+            O="${GITHUB_WORKSPACE}/out" \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            oppo6771_defconfig
+
+      - name: Build kernel metadata
+        run: |
+          make -j"$(nproc)" \
+            O="${GITHUB_WORKSPACE}/out" \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            kernelrelease | tee "${GITHUB_WORKSPACE}/out/kernelrelease.txt"
+
+      - name: Upload kernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-build-output
+          path: |
+            out/.config
+            out/kernelrelease.txt
+          if-no-files-found: error
