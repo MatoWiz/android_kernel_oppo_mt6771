@@ -64,6 +64,8 @@
 #ifdef OPLUS_FEATURE_HEALTHINFO
 #include <linux/oppo_healthinfo/memory_monitor.h>
 #include <linux/oppo_healthinfo/oppo_ion.h>
+static bool ion_cnt_enable;
+static atomic_long_t ion_total_size = ATOMIC_LONG_INIT(0);
 #endif /* OPLUS_FEATURE_HEALTHINFO */
 static atomic_long_t total_heap_bytes;
 
@@ -719,7 +721,7 @@ static int chg_sched(struct task_struct *tsk, bool enter)
 }
 
 /* TODO use task comm may not safe. */
-inline is_allocator_svc(struct task_struct *tsk)
+bool is_allocator_svc(struct task_struct *tsk)
 {
 	return (tsk->tgid == alloc_svc_tgid);
 }
