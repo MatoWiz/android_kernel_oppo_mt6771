@@ -1,0 +1,7 @@
+menu "OPPO wakelock profiler"
+
+config OPPO_WAKELOCK_PROFILER
+bool "OPPO wakelock profiler"
+default y
+
+endmenu

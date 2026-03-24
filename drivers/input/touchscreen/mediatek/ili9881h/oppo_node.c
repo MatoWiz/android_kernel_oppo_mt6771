@@ -335,6 +335,7 @@ static void ilitek_sync_touch_profile_locked(void)
 	} else if (idev->touch_response_mode == 3 && idev->touch_sensitivity_mode == 3) {
 		idev->touch_profile_mode = 3;
 	} else {
+		/* mixed manual values are treated as the most aggressive profile */
 		idev->touch_profile_mode = 3;
 	}
 }
@@ -1482,17 +1483,17 @@ int oppo_proc_init(void)
 		ipio_err("create proc/touchpanel/game_switch_enable Failed!\n");
 		res = -1;
 	}
-	proc_touch_response_mode = proc_create("touch_response_mode", 0666, proc_dir_oppo, &proc_touch_response_mode_fops);
+	proc_touch_response_mode = proc_create("touch_response_mode", 0644, proc_dir_oppo, &proc_touch_response_mode_fops);
 	if (proc_touch_response_mode == NULL) {
 		ipio_err("create proc/touchpanel/touch_response_mode Failed!\n");
 		res = -1;
 	}
-	proc_touch_sensitivity_mode = proc_create("touch_sensitivity_mode", 0666, proc_dir_oppo, &proc_touch_sensitivity_mode_fops);
+	proc_touch_sensitivity_mode = proc_create("touch_sensitivity_mode", 0644, proc_dir_oppo, &proc_touch_sensitivity_mode_fops);
 	if (proc_touch_sensitivity_mode == NULL) {
 		ipio_err("create proc/touchpanel/touch_sensitivity_mode Failed!\n");
 		res = -1;
 	}
-	proc_touch_profile_mode = proc_create("touch_profile_mode", 0666, proc_dir_oppo, &proc_touch_profile_mode_fops);
+	proc_touch_profile_mode = proc_create("touch_profile_mode", 0644, proc_dir_oppo, &proc_touch_profile_mode_fops);
 	if (proc_touch_profile_mode == NULL) {
 		ipio_err("create proc/touchpanel/touch_profile_mode Failed!\n");
 		res = -1;

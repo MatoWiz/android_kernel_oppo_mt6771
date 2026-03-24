@@ -201,7 +201,7 @@ static void ilitek_tddi_wq_ges_recover(void)
 	//mutex_lock(&idev->touch_mutex);
 	atomic_set(&idev->esd_stat, START);
 	idev->ges_recover();
-	if(idev->gameSwitch) {
+	if (idev->gameSwitch) {
 		ilitek_tddi_ic_func_ctrl("game_switch", ENABLE);
 	}
 	else {
