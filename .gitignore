@@ -128,3 +128,6 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# local build output directory used by CI instructions
+out/
