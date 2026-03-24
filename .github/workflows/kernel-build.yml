@@ -49,6 +49,19 @@ jobs:
             CROSS_COMPILE=aarch64-linux-gnu- \
             kernelrelease | tee "${GITHUB_WORKSPACE}/out/kernelrelease.txt"
 
+      - name: Build the kernel image and modules
+        run: |
+          make -j"$(nproc)" \
+            O="${GITHUB_WORKSPACE}/out" \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            Image
+          make -j"$(nproc)" \
+            O="${GITHUB_WORKSPACE}/out" \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            modules
+
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
         with:
@@ -56,4 +69,6 @@ jobs:
           path: |
             out/.config
             out/kernelrelease.txt
+            out/arch/arm64/boot/Image
+            out/lib/modules/$(cat out/kernelrelease.txt)/
           if-no-files-found: error
