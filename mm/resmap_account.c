@@ -1,1 +1,1 @@
-../../vendor/oplus/kernel/oplus_performance/gloom/resmap_account.c
+../vendor/oplus/kernel/oplus_performance/gloom/resmap_account.c
