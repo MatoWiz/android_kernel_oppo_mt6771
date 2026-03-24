@@ -10746,7 +10746,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt,
 #if 1
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 					    unsigned int buf_sz,
-					    enum UNIFIED_COLOR_FMT ufmt)
+					    unsigned int ufmt)
 {
 	int ret = 0;
 	struct ion_client *ion_display_client = NULL;
@@ -10802,6 +10802,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	frame_va = ion_map_kernel(ion_display_client, ion_display_handle);
 	if (IS_ERR(frame_va)) {
 		_DISP_PRINT_FENCE_OR_ERR(1, "%s #%d map err:%lx\n",
+					 __func__, __LINE__,
 					 (unsigned long)frame_va);
 	} else {
 		memcpy((void *)pbuf, frame_va, buffer_size);
@@ -10822,7 +10823,7 @@ out:
 #else
 
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
-					    enum UNIFIED_COLOR_FMT ufmt)
+					    unsigned int ufmt)
 {
 	int ret = 0;
 #ifdef MTKFB_M4U_SUPPORT

@@ -341,7 +341,7 @@ static const char *dprec_logger_spy(enum DPREC_LOGGER_ENUM l)
 	}
 }
 
-void dprec_logger_trigger(unsigned int type_logsrc, unsigned int val1,
+void dprec_logger_trigger(enum DPREC_LOGGER_ENUM type_logsrc, unsigned int val1,
 			  unsigned int val2)
 {
 	unsigned long flags = 0;
@@ -556,7 +556,7 @@ void dprec_logger_start_fps(void)
 }
 
 
-void dprec_logger_start(unsigned int type_logsrc, unsigned int val1,
+void dprec_logger_start(enum DPREC_LOGGER_ENUM type_logsrc, unsigned int val1,
 			unsigned int val2)
 {
 	unsigned long flags = 0;
@@ -592,7 +592,7 @@ void dprec_logger_start(unsigned int type_logsrc, unsigned int val1,
 	spin_unlock_irqrestore(&gdprec_logger_spinlock, flags);
 }
 
-void dprec_logger_done(unsigned int type_logsrc, unsigned int val1,
+void dprec_logger_done(enum DPREC_LOGGER_ENUM type_logsrc, unsigned int val1,
 		       unsigned int val2)
 {
 	unsigned long flags = 0;
@@ -930,7 +930,7 @@ void dprec_submit(struct dprec_logger_event *event, unsigned int val1,
 			 val1, val2);
 }
 
-void dprec_logger_submit(unsigned int type_logsrc, unsigned long long period,
+void dprec_logger_submit(enum DPREC_LOGGER_ENUM type_logsrc, unsigned long long period,
 			 unsigned int fence_idx)
 {
 	unsigned long flags = 0;
@@ -1626,7 +1626,7 @@ void dprec_event_op(enum DPREC_EVENT event)
 {
 }
 
-void dprec_logger_trigger(unsigned int type_logsrc, unsigned int val1,
+void dprec_logger_trigger(enum DPREC_LOGGER_ENUM type_logsrc, unsigned int val1,
 			  unsigned int val2)
 {
 }
@@ -1642,12 +1642,12 @@ int _primary_monitor_fps_thread(void *data)
 	return 0;
 }
 
-void dprec_logger_start(unsigned int type_logsrc, unsigned int val1,
+void dprec_logger_start(enum DPREC_LOGGER_ENUM type_logsrc, unsigned int val1,
 			unsigned int val2)
 {
 }
 
-void dprec_logger_done(unsigned int type_logsrc, unsigned int val1,
+void dprec_logger_done(enum DPREC_LOGGER_ENUM type_logsrc, unsigned int val1,
 		       unsigned int val2)
 {
 }
@@ -1687,7 +1687,7 @@ void dprec_submit(struct dprec_logger_event *event, unsigned int val1,
 {
 }
 
-void dprec_logger_submit(unsigned int type_logsrc, unsigned long long period,
+void dprec_logger_submit(enum DPREC_LOGGER_ENUM type_logsrc, unsigned long long period,
 			 unsigned int fence_idx)
 {
 }
