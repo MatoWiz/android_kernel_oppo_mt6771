@@ -703,6 +703,7 @@ struct ilitek_tddi_dev {
 	u8 direction;
 	u8 touch_response_mode;
 	u8 touch_sensitivity_mode;
+	u8 touch_profile_mode;
 #endif
     struct firmware tp_firmware;//mfeng add
     u8 *fw_buf_dma;

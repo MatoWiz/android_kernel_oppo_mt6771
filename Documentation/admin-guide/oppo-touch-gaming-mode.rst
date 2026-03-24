@@ -12,6 +12,7 @@ Nodes
 
 - ``touch_response_mode`` (0-3)
 - ``touch_sensitivity_mode`` (0-3)
+- ``touch_profile_mode`` (0-3 preset profile selector)
 - ``game_switch_enable`` (existing compatibility node)
 
 Mode meanings
@@ -31,6 +32,13 @@ Mode meanings
 - ``2``: very high sensitivity
 - ``3``: maximum/aggressive sensitivity
 
+``touch_profile_mode`` (preset that sets both response and sensitivity):
+
+- ``0``: normal / battery-focused
+- ``1``: balanced gaming
+- ``2``: performance gaming
+- ``3``: overkill gaming
+
 How to change from root shell (Termux)
 ======================================
 
@@ -39,11 +47,13 @@ Example commands::
   su
   echo 2 > /proc/touchpanel/touch_response_mode
   echo 1 > /proc/touchpanel/touch_sensitivity_mode
+  echo 2 > /proc/touchpanel/touch_profile_mode
 
 Read current values::
 
   cat /proc/touchpanel/touch_response_mode
   cat /proc/touchpanel/touch_sensitivity_mode
+  cat /proc/touchpanel/touch_profile_mode
 
 Compatibility note
 ==================
