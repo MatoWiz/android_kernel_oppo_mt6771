@@ -2,6 +2,9 @@
 #ifndef _LINUX_OPPO_HEALTHINFO_OPPO_JANK_MONITOR_H_
 #define _LINUX_OPPO_HEALTHINFO_OPPO_JANK_MONITOR_H_
 
+#include <linux/errno.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
 #include <linux/types.h>
 #include <linux/seq_file.h>
 
