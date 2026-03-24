@@ -1,0 +1,5 @@
+menu "OPLUS midas"
+config OPLUS_FEATURE_MIDAS
+bool "OPLUS MIDAS"
+default n
+endmenu

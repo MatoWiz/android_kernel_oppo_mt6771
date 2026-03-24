@@ -1,0 +1,9 @@
+menu "OPLUS nandswap"
+config NANDSWAP
+bool "OPLUS NANDSWAP"
+default n
+config NANDSWAP_DEBUG
+bool "OPLUS NANDSWAP DEBUG"
+depends on NANDSWAP
+default n
+endmenu

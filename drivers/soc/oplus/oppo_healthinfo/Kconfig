@@ -1,0 +1,7 @@
+menu "OPLUS healthinfo"
+
+config OPLUS_HEALTHINFO
+bool "OPLUS healthinfo"
+default y
+
+endmenu

@@ -1,0 +1,7 @@
+menu "OPLUS system"
+
+config OPLUS_SYSTEM_KERNEL
+bool "OPLUS system kernel support"
+default y
+
+endmenu
