@@ -39,6 +39,10 @@ Mode meanings
 - ``2``: performance gaming
 - ``3``: overkill gaming
 
+When ``touch_response_mode`` and ``touch_sensitivity_mode`` are written
+manually to a mixed non-preset pair, reading ``touch_profile_mode`` returns
+``3`` as a high-performance fallback indicator.
+
 How to change from root shell (Termux)
 ======================================
 

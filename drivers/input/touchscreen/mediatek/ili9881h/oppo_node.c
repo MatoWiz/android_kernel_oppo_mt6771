@@ -296,10 +296,14 @@ static void ilitek_apply_touch_tuning_locked(void)
 	ilitek_tddi_ic_func_ctrl("finger_sense", idev->touch_sensitivity_mode);
 }
 
+#define TOUCH_PROFILE_MAX	3
+
 static void ilitek_apply_touch_profile_locked(u8 profile)
 {
-	if (profile > 3)
+	if (profile > TOUCH_PROFILE_MAX) {
+		ipio_info("invalid touch profile %u, fallback to 0\n", profile);
 		profile = 0;
+	}
 
 	switch (profile) {
 	case 1:
@@ -335,7 +339,12 @@ static void ilitek_sync_touch_profile_locked(void)
 	} else if (idev->touch_response_mode == 3 && idev->touch_sensitivity_mode == 3) {
 		idev->touch_profile_mode = 3;
 	} else {
-		/* mixed manual values are treated as the most aggressive profile */
+		/*
+		 * Manual response/sensitivity writes can leave a mixed pair that
+		 * doesn't map to a predefined profile; expose it as profile 3 so
+		 * userspace can recognize the effective non-default high-performance
+		 * state and restore a preset explicitly.
+		 */
 		idev->touch_profile_mode = 3;
 	}
 }
@@ -1289,7 +1298,7 @@ static ssize_t oppo_proc_touch_profile_mode_write(struct file *file, const char 
 
 	if (kstrtoint(buf, 0, &profile) < 0)
 		return -EINVAL;
-	if (profile < 0 || profile > 3)
+	if (profile < 0 || profile > TOUCH_PROFILE_MAX)
 		return -EINVAL;
 
 	mutex_lock(&idev->touch_mutex);

@@ -203,8 +203,7 @@ static void ilitek_tddi_wq_ges_recover(void)
 	idev->ges_recover();
 	if (idev->gameSwitch) {
 		ilitek_tddi_ic_func_ctrl("game_switch", ENABLE);
-	}
-	else {
+	} else {
 		ilitek_tddi_ic_func_ctrl("game_switch", DISABLE);
 	}
 	schedule_work(&idev->headset_work_queue);
@@ -220,10 +219,9 @@ static void ilitek_tddi_wq_spi_recover(void)
 	atomic_set(&idev->esd_stat, START);
     idev->actual_tp_mode = P5_X_FW_DEMO_MODE;
 	ilitek_tddi_fw_upgrade_handler(NULL);
-	if(idev->gameSwitch) {
+	if (idev->gameSwitch) {
 		ilitek_tddi_ic_func_ctrl("game_switch", ENABLE);
-	}
-	else {
+	} else {
 		ilitek_tddi_ic_func_ctrl("game_switch", DISABLE);
 	}
 	schedule_work(&idev->headset_work_queue);
