@@ -1,0 +1,12 @@
+menu "OPLUS iomonitor"
+
+config IOMONITOR
+bool "OPLUS I/O monitor"
+default n
+
+config IOMONITOR_WITH_F2FS
+bool "OPLUS I/O monitor with F2FS"
+depends on IOMONITOR
+default n
+
+endmenu
