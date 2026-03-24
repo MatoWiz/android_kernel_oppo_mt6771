@@ -5,13 +5,13 @@
 #include <linux/blkdev.h>
 #include <linux/errno.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 
-static inline struct request *smart_peek_request(struct request_queue *q)
+struct request *smart_peek_request(struct request_queue *q);
+
+static inline int high_prio_for_task(struct task_struct *task)
 {
-	if (!q || list_empty(&q->queue_head))
-		return NULL;
-
-	return list_entry_rq(q->queue_head.next);
+	return 0;
 }
 
 static inline void fg_bg_max_count_init(struct request_queue *q)

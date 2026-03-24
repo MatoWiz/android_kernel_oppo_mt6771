@@ -117,7 +117,7 @@ obj-y += oppo_healthinfo/
 
 #if defined(OPLUS_FEATURE_PROCESS_RECLAIM)
 #ifeq ($(OPLUS_FEATURE_PROCESS_RECLAIM), yes)
-obj-$(CONFIG_PROCESS_RECLAIM_ENHANCE) += process_mm_reclaim.o
+obj-$(CONFIG_PROCESS_RECLAIM_ENHANCE) += process_mm_reclaim_weak.o
 #else
 #obj-$(CONFIG_PROCESS_RECLAIM_ENHANCE) += process_mm_reclaim_weak.o
 #endif

@@ -2,6 +2,7 @@
 #ifndef _OPLUS_MULTI_FREEAREA_H_
 #define _OPLUS_MULTI_FREEAREA_H_
 
+#include <linux/mm_types.h>
 #include <linux/mmzone.h>
 
 static inline unsigned int page_to_flc(struct page *page)

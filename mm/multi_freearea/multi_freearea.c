@@ -3,7 +3,7 @@
 
 bool is_multi_freearea(struct zone *zone)
 {
-return false;
+	return false;
 }
 
 void set_migratetype_isolate(struct page *page, int migratetype)
@@ -13,7 +13,7 @@ void set_migratetype_isolate(struct page *page, int migratetype)
 int del_page_from_free_list(struct page *page, struct zone *zone,
     unsigned int order)
 {
-return 0;
+	return 0;
 }
 
 void add_page_to_free_list(struct page *page, struct zone *zone,
