@@ -30,6 +30,7 @@ int sign_firmware = 0;
 #endif
 static void ilitek_apply_touch_tuning_locked(void);
 static void ilitek_apply_touch_profile_locked(u8 profile);
+static void ilitek_sync_touch_profile_locked(void);
 static ssize_t wt_mptest_read(struct file *filp, char __user *buff, size_t size, loff_t *pos)
 {
 	int ret = 0;
@@ -252,6 +253,8 @@ static ssize_t oppo_proc_game_switch_write(struct file *filp, const char *buff, 
 	if (ptr[0] == '0') {
 		ipio_info("disable game play mode\n");
 		idev->touch_response_mode = 0;
+		idev->touch_sensitivity_mode = 0;
+		ilitek_sync_touch_profile_locked();
 		ilitek_apply_touch_tuning_locked();
 	} else if (!ptr[0]) {
 		ipio_err("Unknown command\n");
@@ -259,6 +262,7 @@ static ssize_t oppo_proc_game_switch_write(struct file *filp, const char *buff, 
 		ipio_info("enable game play mode\n");
 		if (idev->touch_response_mode == 0)
 			idev->touch_response_mode = 1;
+		ilitek_sync_touch_profile_locked();
 		ilitek_apply_touch_tuning_locked();
 	}
 	mutex_unlock(&idev->touch_mutex);
@@ -320,6 +324,21 @@ static void ilitek_apply_touch_profile_locked(u8 profile)
 	ilitek_apply_touch_tuning_locked();
 }
 
+static void ilitek_sync_touch_profile_locked(void)
+{
+	if (idev->touch_response_mode == 0 && idev->touch_sensitivity_mode == 0) {
+		idev->touch_profile_mode = 0;
+	} else if (idev->touch_response_mode == 1 && idev->touch_sensitivity_mode == 1) {
+		idev->touch_profile_mode = 1;
+	} else if (idev->touch_response_mode == 2 && idev->touch_sensitivity_mode == 2) {
+		idev->touch_profile_mode = 2;
+	} else if (idev->touch_response_mode == 3 && idev->touch_sensitivity_mode == 3) {
+		idev->touch_profile_mode = 3;
+	} else {
+		idev->touch_profile_mode = 3;
+	}
+}
+
 static ssize_t oppo_proc_touch_response_mode_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
 	size_t out_len;
@@ -359,10 +378,7 @@ static ssize_t oppo_proc_touch_response_mode_write(struct file *file, const char
 
 	mutex_lock(&idev->touch_mutex);
 	idev->touch_response_mode = mode;
-	if (mode == 0 && idev->touch_sensitivity_mode == 0)
-		idev->touch_profile_mode = 0;
-	else
-		idev->touch_profile_mode = 3;
+	ilitek_sync_touch_profile_locked();
 	ilitek_apply_touch_tuning_locked();
 	mutex_unlock(&idev->touch_mutex);
 
@@ -408,10 +424,7 @@ static ssize_t oppo_proc_touch_sensitivity_mode_write(struct file *file, const c
 
 	mutex_lock(&idev->touch_mutex);
 	idev->touch_sensitivity_mode = mode;
-	if (mode == 0 && idev->touch_response_mode == 0)
-		idev->touch_profile_mode = 0;
-	else
-		idev->touch_profile_mode = 3;
+	ilitek_sync_touch_profile_locked();
 	ilitek_apply_touch_tuning_locked();
 	mutex_unlock(&idev->touch_mutex);
 
