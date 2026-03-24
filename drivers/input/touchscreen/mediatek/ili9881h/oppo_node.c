@@ -28,6 +28,7 @@ extern unsigned char g_user_buf[PAGE_SIZE];
 #ifdef ODM_WT_EDIT
 int sign_firmware = 0;
 #endif
+static void ilitek_apply_touch_tuning_locked(void);
 static ssize_t wt_mptest_read(struct file *filp, char __user *buff, size_t size, loff_t *pos)
 {
 	int ret = 0;
@@ -249,20 +250,135 @@ static ssize_t oppo_proc_game_switch_write(struct file *filp, const char *buff, 
 	mutex_lock(&idev->touch_mutex);
 	if (ptr[0] == '0') {
 		ipio_info("disable game play mode\n");
-		idev->gameSwitch = 0;
-		ilitek_tddi_ic_func_ctrl("game_switch", DISABLE);
+		idev->touch_response_mode = 0;
+		ilitek_apply_touch_tuning_locked();
 	} else if (!ptr[0]) {
 		ipio_err("Unknown command\n");
 	} else {
 		ipio_info("enable game play mode\n");
-		idev->gameSwitch= 1;
-		ilitek_tddi_ic_func_ctrl("game_switch", ENABLE);
-
+		if (idev->touch_response_mode == 0)
+			idev->touch_response_mode = 1;
+		ilitek_apply_touch_tuning_locked();
 	}
 	mutex_unlock(&idev->touch_mutex);
 OUT:
 	kfree(ptr);
 	return size;
+}
+
+static void ilitek_apply_touch_tuning_locked(void)
+{
+	if (idev->touch_response_mode == 0) {
+		ilitek_tddi_ic_func_ctrl("game_switch", DISABLE);
+		idev->gameSwitch = 0;
+		ilitek_tddi_ic_func_ctrl("hopping_ctrl", 0x0);
+		idev->hopping = false;
+	} else {
+		ilitek_tddi_ic_func_ctrl("game_switch", ENABLE);
+		idev->gameSwitch = 1;
+		if (idev->touch_response_mode == 1) {
+			ilitek_tddi_ic_func_ctrl("hopping_ctrl", 0x0);
+			idev->hopping = false;
+		} else if (idev->touch_response_mode == 2) {
+			ilitek_tddi_ic_func_ctrl("hopping_ctrl", 0x3);
+			idev->hopping = true;
+		} else {
+			ilitek_tddi_ic_func_ctrl("hopping_ctrl", 0x6);
+			idev->hopping = true;
+		}
+	}
+
+	ilitek_tddi_ic_func_ctrl("finger_sense", idev->touch_sensitivity_mode);
+}
+
+static ssize_t oppo_proc_touch_response_mode_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+{
+	size_t out_len;
+	char out[8] = {0};
+
+	if (*ppos)
+		return 0;
+	if (count == 0)
+		return -EINVAL;
+
+	out_len = scnprintf(out, sizeof(out), "%u\n", idev->touch_response_mode);
+	if (out_len > count)
+		out_len = count;
+	if (copy_to_user(buf, out, out_len))
+		return -EFAULT;
+	*ppos += out_len;
+	return out_len;
+}
+
+static ssize_t oppo_proc_touch_response_mode_write(struct file *file, const char __user *userbuf, size_t count, loff_t *ppos)
+{
+	char buf[8] = {0};
+	size_t len = 0;
+	int mode = 0;
+
+	if (count == 0)
+		return -EINVAL;
+
+	len = (count < sizeof(buf) - 1) ? count : (sizeof(buf) - 1);
+	if (copy_from_user(buf, userbuf, len))
+		return -EFAULT;
+
+	if (kstrtoint(buf, 0, &mode) < 0)
+		return -EINVAL;
+	if (mode < 0 || mode > 3)
+		return -EINVAL;
+
+	mutex_lock(&idev->touch_mutex);
+	idev->touch_response_mode = mode;
+	ilitek_apply_touch_tuning_locked();
+	mutex_unlock(&idev->touch_mutex);
+
+	return count;
+}
+
+static ssize_t oppo_proc_touch_sensitivity_mode_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+{
+	size_t out_len;
+	char out[8] = {0};
+
+	if (*ppos)
+		return 0;
+	if (count == 0)
+		return -EINVAL;
+
+	out_len = scnprintf(out, sizeof(out), "%u\n", idev->touch_sensitivity_mode);
+	if (out_len > count)
+		out_len = count;
+	if (copy_to_user(buf, out, out_len))
+		return -EFAULT;
+	*ppos += out_len;
+	return out_len;
+}
+
+static ssize_t oppo_proc_touch_sensitivity_mode_write(struct file *file, const char __user *userbuf, size_t count, loff_t *ppos)
+{
+	char buf[8] = {0};
+	size_t len = 0;
+	int mode = 0;
+
+	if (count == 0)
+		return -EINVAL;
+
+	len = (count < sizeof(buf) - 1) ? count : (sizeof(buf) - 1);
+	if (copy_from_user(buf, userbuf, len))
+		return -EFAULT;
+
+	if (kstrtoint(buf, 0, &mode) < 0)
+		return -EINVAL;
+	if (mode < 0 || mode > 3)
+		return -EINVAL;
+
+	mutex_lock(&idev->touch_mutex);
+	idev->touch_sensitivity_mode = mode;
+	ilitek_apply_touch_tuning_locked();
+	mutex_unlock(&idev->touch_mutex);
+
+	return count;
 }
 
 static void *c_start(struct seq_file *m, loff_t *pos)
@@ -1105,6 +1221,14 @@ struct file_operations proc_game_switch_enable_fops = {
 	.read  = oppo_proc_game_switch_read,
 	.write = oppo_proc_game_switch_write,
 };
+struct file_operations proc_touch_response_mode_fops = {
+	.read  = oppo_proc_touch_response_mode_read,
+	.write = oppo_proc_touch_response_mode_write,
+};
+struct file_operations proc_touch_sensitivity_mode_fops = {
+	.read  = oppo_proc_touch_sensitivity_mode_read,
+	.write = oppo_proc_touch_sensitivity_mode_write,
+};
 
 const struct seq_operations oppo_ili_coordinate_seq_ops = {
 	.start  = c_start,
@@ -1213,6 +1337,8 @@ int oppo_proc_init(void)
 	struct proc_dir_entry *proc_mptest_node;
 	struct proc_dir_entry *proc_oppo_sign_firmware_dir;
 	struct proc_dir_entry *proc_hopping_node;
+	struct proc_dir_entry *proc_touch_response_mode;
+	struct proc_dir_entry *proc_touch_sensitivity_mode;
 	//for WT factory test
 	proc_wt_dir = proc_mkdir("touchscreen", NULL);
 	if ( proc_wt_dir == NULL )
@@ -1255,6 +1381,16 @@ int oppo_proc_init(void)
 	if ( proc_game_switch_enable == NULL )
 	{
 		ipio_err("create proc/touchpanel/game_switch_enable Failed!\n");
+		res = -1;
+	}
+	proc_touch_response_mode = proc_create("touch_response_mode", 0666, proc_dir_oppo, &proc_touch_response_mode_fops);
+	if (proc_touch_response_mode == NULL) {
+		ipio_err("create proc/touchpanel/touch_response_mode Failed!\n");
+		res = -1;
+	}
+	proc_touch_sensitivity_mode = proc_create("touch_sensitivity_mode", 0666, proc_dir_oppo, &proc_touch_sensitivity_mode_fops);
+	if (proc_touch_sensitivity_mode == NULL) {
+		ipio_err("create proc/touchpanel/touch_sensitivity_mode Failed!\n");
 		res = -1;
 	}
 	proc_coordinate= proc_create("coordinate",0444,proc_dir_oppo,&oppo_ili_coordinate_fops);
@@ -1352,4 +1488,3 @@ int oppo_proc_init(void)
 
 	return res;
 }
-

@@ -701,6 +701,8 @@ struct ilitek_tddi_dev {
 	unsigned long usb_state;
 	u8 gameSwitch;
 	u8 direction;
+	u8 touch_response_mode;
+	u8 touch_sensitivity_mode;
 #endif
     struct firmware tp_firmware;//mfeng add
     u8 *fw_buf_dma;
