@@ -510,7 +510,7 @@ ifeq ($(CONFIG_SND_SOC_MT6359),y)
   subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/accdet/mt6359
 endif
 
-obj-$(CONFIG_SND_SOC_ALSACODEC_TFA9890) += tfa98xx-v6/
+# obj-$(CONFIG_SND_SOC_ALSACODEC_TFA9890) += tfa98xx-v6/
 
 #ifdef OPLUS_BUG_COMPATIBILITY
 obj-$(CONFIG_SND_SOC_CODEC_AW87339) += aw87339/
@@ -519,4 +519,3 @@ obj-$(CONFIG_SND_SOC_CODEC_AW87339) += aw87339/
 #ifdef OPLUS_BUG_COMPATIBILITY
 obj-$(CONFIG_SND_SOC_DBMDX) += dbmdx/
 #endif /* OPLUS_BUG_COMPATIBILITY */
-

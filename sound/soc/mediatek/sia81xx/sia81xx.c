@@ -1485,7 +1485,7 @@ static int sia81xx_volme_boost_set(
             return 0;
         }
         if(index > 3) {
-            pr_err("[err][%s] %s: index = %ld, rst = %d ucontrol_value is Invalid parameter\r\n",
+            pr_err("[err][%s] %s: index = %u, rst = %d ucontrol_value is Invalid parameter\r\n",
                 LOG_FLAG, __func__, index, sia81xx->rst_pin);
             return 0;
         }
@@ -1510,11 +1510,11 @@ static int sia81xx_volme_boost_set(
 #endif /* OPLUS_BUG_COMPATIBILITY */
 
 #ifdef OPLUS_BUG_COMPATIBILITY
-void sia81xx_start(){
+void sia81xx_start(void){
         sia81xx_resume(g_sia81xx);
 }
 
-void sia81xx_stop(){
+void sia81xx_stop(void){
         sia81xx_suspend(g_sia81xx);
 }
 #endif /* OPLUS_BUG_COMPATIBILITY */

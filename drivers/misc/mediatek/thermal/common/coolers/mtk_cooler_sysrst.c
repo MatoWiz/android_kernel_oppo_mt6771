@@ -31,6 +31,10 @@
 #include <tscpu_settings.h>
 #include <soc/oplus/system/oppo_project.h>
 
+#ifndef HIGH_TEMP_AGING
+#define HIGH_TEMP_AGING 0
+#endif
+
 /*=============================================================
  *Local variable definition
  *=============================================================

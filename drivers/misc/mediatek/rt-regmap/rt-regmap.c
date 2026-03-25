@@ -181,7 +181,7 @@ static struct reg_index_offset find_register_index(
 		if (reg > rm[index]->addr) {
 			if ((reg - rm[index]->addr) < rm[index]->size) {
 				rio.index = index;
-				while (&rd->props.group[i] != NULL) {
+				while (rd->props.group && i < register_num) {
 					if (reg >= rd->props.group[i].start
 					&& reg <= rd->props.group[i].end) {
 						unit =

@@ -27,6 +27,10 @@
 
 #include "mt-plat/mtk_thermal_monitor.h"
 
+#ifndef HIGH_TEMP_AGING
+#define HIGH_TEMP_AGING 0
+#endif
+
 #if 1
 #define mtk_cooler_kshutdown_dprintk(fmt, args...)	\
 	pr_notice("thermal/cooler/kshutdown " fmt, ##args)

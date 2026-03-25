@@ -451,7 +451,7 @@ static void scp_init_work_done(struct work_struct *work)
 	int32_t cfg_data[12] = {0};
 #endif
 #ifdef OPLUS_FEATURE_SENSOR
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 	get_sensor_parameter(&c_data);
 #endif
 
@@ -806,7 +806,7 @@ static int gyrohub_set_cali(uint8_t *data, uint8_t count)
 	int32_t *buf = (int32_t *)data;
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 #ifdef OPLUS_FEATURE_SENSOR
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 	get_sensor_parameter(&c_data);
 #endif
 

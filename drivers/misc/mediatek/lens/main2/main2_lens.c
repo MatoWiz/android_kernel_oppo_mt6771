@@ -189,7 +189,7 @@ static void AFRegulatorCtrl_Main2(int Stage)
 				if (Status != 0)
 					LOG_INF("regulator_enable fail\n");
 
-					usleep_range(5000, 5500);
+				usleep_range(5000, 5500);
 			} else {
 				LOG_INF("AF Power on\n");
 			}

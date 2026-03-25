@@ -1941,9 +1941,8 @@ void FlashRegulatorCtrl(int Stage)
 		if (regVCAMIO != NULL && g_VCAMIOEn == 0) {
 			if (regulator_set_voltage(regVCAMIO, 1800000, 1800000))
 				pr_debug("regulator_set_voltage fail\n");
-
-				if (regulator_enable(regVCAMIO))
-					pr_debug("regulator_enable fail\n");
+			if (regulator_enable(regVCAMIO))
+				pr_debug("regulator_enable fail\n");
 
 			g_VCAMIOEn = 1;
 			pr_debug("Flash VCAMIO Power on\n");
@@ -2267,4 +2266,3 @@ module_exit(flashlight_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Simon Wang <Simon-TCH.Wang@mediatek.com>");
 MODULE_DESCRIPTION("MTK Flashlight Core Driver");
-

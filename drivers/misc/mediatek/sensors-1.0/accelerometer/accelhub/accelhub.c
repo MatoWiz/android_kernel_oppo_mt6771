@@ -432,7 +432,7 @@ static void scp_init_work_done(struct work_struct *work)
 	int32_t cfg_data[6] = {0};
 #endif
 #ifdef OPLUS_FEATURE_SENSOR
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 	get_sensor_parameter(&c_data);
 #endif
 
@@ -617,7 +617,8 @@ static int gsensor_factory_set_cali(int32_t data[3])
 	update_sensor_parameter();
 
 	ret = sensor_cfg_to_hub(ID_ACCELEROMETER, (uint8_t *)tx_buff, sizeof(tx_buff));
-	pr_err("gsensor cali: %d %d %d, ret=%d\n", data[0],data[1],data[2]);
+	pr_err("gsensor cali: %d %d %d, ret=%d\n",
+		data[0], data[1], data[2], ret);
 	return ret;
 #else
 	return 0;
@@ -760,7 +761,7 @@ static int gsensor_set_cali(uint8_t *data, uint8_t count)
 	int32_t *buf = (int32_t *)data;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 #ifdef OPLUS_FEATURE_SENSOR
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 	get_sensor_parameter(&c_data);
 	pr_err("gsensor_set_cali::cali_data::%d %d %d\n",
 		c_data.acc_data[0],

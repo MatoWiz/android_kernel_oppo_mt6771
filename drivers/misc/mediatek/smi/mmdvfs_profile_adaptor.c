@@ -464,7 +464,7 @@ static int mmdvfs_apply_vcore_hw_configurtion_by_step(
 	} else {
 		/* Check if the step is legall */
 		if (mmdvfs_step < 0 || mmdvfs_step >= self->step_num
-		|| (self->step_profile_mappings + mmdvfs_step) == NULL)
+		|| self->step_profile_mappings == NULL)
 			return -1;
 
 		/* Get hw configurtion fot the step */
@@ -632,7 +632,7 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 
 	/* Check if the step is legall */
 	if (mmdvfs_step < 0 || mmdvfs_step >= self->step_num
-	|| (self->step_profile_mappings + mmdvfs_step) == NULL)
+	|| self->step_profile_mappings == NULL)
 		return -1;
 
 	/* Get hw configurtion fot the step */

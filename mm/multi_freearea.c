@@ -1,1 +1,2 @@
-../../vendor/oplus/kernel/oplus_performance/multi_freearea/multi_freearea.c
+// SPDX-License-Identifier: GPL-2.0
+#include "multi_freearea.h"

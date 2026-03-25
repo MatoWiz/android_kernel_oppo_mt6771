@@ -1044,15 +1044,15 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 	switch (module) {
 	case ISP_IRQ_TYPE_INT_CAM_A_ST:
 		regModule = ISP_CAM_A_IDX;
-		strncpy(cam, "CAM_A", sizeof("CAM_A"));
+		strncpy(cam, "CAM_A", sizeof(cam) - 1);
 		break;
 	case ISP_IRQ_TYPE_INT_CAM_B_ST:
 		regModule = ISP_CAM_B_IDX;
-		strncpy(cam, "CAM_B", sizeof("CAM_B"));
+		strncpy(cam, "CAM_B", sizeof(cam) - 1);
 		break;
 	case ISP_IRQ_TYPE_INT_CAM_C_ST:
 		regModule = ISP_CAM_C_IDX;
-		strncpy(cam, "CAM_C", sizeof("CAM_C"));
+		strncpy(cam, "CAM_C", sizeof(cam) - 1);
 		break;
 	default:
 		LOG_NOTICE("unsupported module:0x%x\n", module);
@@ -4898,7 +4898,7 @@ static int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	case CAM_C_BASE_HW:
 		if (length > ISP_REG_RANGE) {
 			LOG_NOTICE(
-			    "mmap range error :module(0x%x) length(0x%lx),ISP_REG_RANGE(0x%lx)!\n",
+			    "mmap range error :module(0x%lx) length(0x%lx),ISP_REG_RANGE(0x%lx)!\n",
 			    pfn, length, ISP_REG_RANGE);
 			return -EAGAIN;
 		}
@@ -4912,7 +4912,7 @@ static int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	case UNI_A_BASE_HW:
 		if (length > ISP_REG_RANGE/2) {
 			LOG_NOTICE(
-			    "mmap range error :module(0x%x) length(0x%lx),ISP_REG_RANGE(0x%lx)!\n",
+			    "mmap range error :module(0x%lx) length(0x%lx),ISP_REG_RANGE(0x%lx)!\n",
 			    pfn, length, ISP_REG_RANGE/2);
 			return -EAGAIN;
 		}

@@ -1420,7 +1420,7 @@ static int vpu_probe(struct platform_device *pdev)
 
 	if (core < 0) {
 		LOG_ERR("%s(%d), wrong core(%d) = vpu_num_devs(%d), return\n",
-			"vpu_num_devs", core, vpu_num_devs);
+			"vpu_num_devs", vpu_num_devs, core, vpu_num_devs);
 		return -1;
 	}
 

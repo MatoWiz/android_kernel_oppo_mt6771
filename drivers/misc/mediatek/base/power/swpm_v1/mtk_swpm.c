@@ -586,7 +586,7 @@ end:
 	return ret;
 }
 
-unsigned int swpm_get_avg_power(enum power_rail type, unsigned int avg_window)
+unsigned int swpm_get_avg_power(unsigned int type, unsigned int avg_window)
 {
 	unsigned int *ptr;
 	unsigned int cnt, idx, sum = 0, pwr = 0;
@@ -620,4 +620,3 @@ unsigned int swpm_get_avg_power(enum power_rail type, unsigned int avg_window)
 	return pwr;
 }
 EXPORT_SYMBOL(swpm_get_avg_power);
-

@@ -1499,6 +1499,13 @@ static int fragmentation_open(struct inode *inode, struct file *file)
 	return seq_open(file, &fragmentation_op);
 }
 
+static const struct file_operations proc_free_area_fops = {
+	.open		= fragmentation_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= seq_release,
+};
+
 static const struct file_operations buddyinfo_file_operations = {
 	.open		= fragmentation_open,
 	.read		= seq_read,

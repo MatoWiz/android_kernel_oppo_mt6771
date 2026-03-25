@@ -334,7 +334,7 @@ static ssize_t alsval_show(struct device_driver *ddri, char *buf)
 #ifdef OPLUS_FEATURE_SENSOR
 static ssize_t gain_als_show(struct device_driver *ddri, char *buf)
 {
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 
 	get_sensor_parameter(&c_data);
 
@@ -355,7 +355,7 @@ static ssize_t ps_raw_show(struct device_driver *ddri, char *buf)
 
 static ssize_t cali_show(struct device_driver *ddri, char *buf)
 {
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 
 	get_sensor_parameter(&c_data);
 
@@ -765,7 +765,7 @@ static int pshub_factory_set_cali(int32_t calidata[6])
 static int pshub_factory_get_cali(int32_t calidata[6])
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
-	struct cali_data c_data;
+	struct cali_data c_data = { 0 };
 
 	get_sensor_parameter(&c_data);
 

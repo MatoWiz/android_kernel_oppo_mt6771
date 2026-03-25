@@ -18,7 +18,7 @@ endif
 # platform driver
 snd-soc-mtk-common-objs := mtk-afe-platform-driver.o mtk-afe-fe-dai.o
 
-obj-$(CONFIG_MTK_ION) += mtk-mmap-ion.o
+# obj-$(CONFIG_MTK_ION) += mtk-mmap-ion.o
 obj-$(CONFIG_SND_SOC_MEDIATEK) += snd-soc-mtk-common.o
 obj-$(CONFIG_SND_SOC_MTK_SRAM) += mtk-sram-manager.o
 

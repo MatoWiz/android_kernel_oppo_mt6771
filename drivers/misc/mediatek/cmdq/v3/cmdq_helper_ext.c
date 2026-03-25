@@ -3088,7 +3088,7 @@ s32 oplus_cmdq_pkt_dump_buf(const struct cmdqRecStruct *handle, dma_addr_t curr_
 		for (inst = buf->va_base; inst < buf->va_base + size;
 			inst += CMDQ_INST_SIZE, buf_pa += CMDQ_INST_SIZE) {
 			cmdq_core_parse_instruction(inst, text, 128);
-			CMDQ_ERR("%#06x %#018llx %s%s", buf_pa, *((u64 *)inst),
+			CMDQ_ERR("%#06llx %#018llx %s%s", (unsigned long long)buf_pa, *((u64 *)inst),
 				(buf_pa == curr_pa) ? ">>" : "  ", text);
 		}
 		cnt++;
@@ -3098,7 +3098,7 @@ s32 oplus_cmdq_pkt_dump_buf(const struct cmdqRecStruct *handle, dma_addr_t curr_
 
 extern struct cmdqRecStruct *_cmdq_get_trigger_loop(void);
 extern void _cmdq_trigger_loop_dump_main_ddp_module(void);
-void oplus_cmdq_core_dump_trigger_loop_thread_buf()
+void oplus_cmdq_core_dump_trigger_loop_thread_buf(void)
 {
 	dma_addr_t curr_pc = 0;
 	struct cmdq_client *client;
@@ -3116,7 +3116,7 @@ void oplus_cmdq_core_dump_trigger_loop_thread_buf()
 
 	client = cmdq_clients[(u32)handle->thread];
 	cmdq_task_get_thread_pc(client->chan, &curr_pc);
-	CMDQ_ERR("trigger loop now pc addr=%#06x\n", curr_pc);
+	CMDQ_ERR("trigger loop now pc addr=%#06llx\n", (unsigned long long)curr_pc);
 	oplus_cmdq_pkt_dump_buf(handle, curr_pc);
 	CMDQ_ERR("%s end\n", __func__);
 	return;

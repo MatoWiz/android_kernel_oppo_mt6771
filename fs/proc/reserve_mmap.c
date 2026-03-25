@@ -1,1 +1,1 @@
-../../../vendor/oplus/kernel/oplus_performance/gloom/reserve_mmap.c
+// SPDX-License-Identifier: GPL-2.0

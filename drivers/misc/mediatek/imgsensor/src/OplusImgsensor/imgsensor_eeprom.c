@@ -80,7 +80,7 @@ static enum IMGSENSOR_RETURN Eeprom_WriteProtectEnable(kal_uint16 enable, kal_ui
         pusendcmd[2] = 0x00;
 
     ret = iBurstWriteReg((kal_uint8 *)pusendcmd , 3, i4SlaveAddr);
-    pr_info("[%s] enable: %d ret: %d", enable, ret);
+    pr_info("[%s] enable: %d ret: %d", __func__, enable, ret);
     return ret;
 }
 

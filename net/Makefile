@@ -97,7 +97,7 @@ obj-y				+= oplus_nf_hooks/
 endif #/* OPLUS_FEATURE_WIFI_LUCKYMONEY */
 
 #ifdef OPLUS_FEATURE_WIFI_SLA
-obj-y                   	+= oplus_sla/
+# obj-y                   	+= oplus_sla/
 #endif /* OPLUS_FEATURE_WIFI_SLA */
 
 OPLUS_FEATURE_DHCP=1
@@ -106,5 +106,5 @@ obj-y				+= oplus_dhcp/
 endif #/* OPLUS_FEATURE_DHCP */
 
 #ifdef OPLUS_FEATURE_NWPOWER
-obj-y				+= oplus_nwpower/
+# obj-y				+= oplus_nwpower/
 #endif /* OPLUS_FEATURE_NWPOWER */
