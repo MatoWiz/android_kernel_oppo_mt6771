@@ -55,7 +55,7 @@ jobs:
             O="${GITHUB_WORKSPACE}/out" \
             ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-gnu- \
-            Image
+            Image.gz-dtb
           make -j"$(nproc)" \
             O="${GITHUB_WORKSPACE}/out" \
             ARCH=arm64 \
@@ -69,6 +69,6 @@ jobs:
           path: |
             out/.config
             out/kernelrelease.txt
-            out/arch/arm64/boot/Image
+            out/arch/arm64/boot/Image.gz-dtb
             out/lib/modules/$(cat out/kernelrelease.txt)/
           if-no-files-found: error
