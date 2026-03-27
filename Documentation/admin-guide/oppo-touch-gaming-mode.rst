@@ -46,12 +46,12 @@ manually to a mixed non-preset pair, reading ``touch_profile_mode`` returns
 How to change from root shell (Termux)
 ======================================
 
-Example commands::
+Exact commands to set each mode to ``3``::
 
   su
-  echo 2 > /proc/touchpanel/touch_response_mode
-  echo 1 > /proc/touchpanel/touch_sensitivity_mode
-  echo 2 > /proc/touchpanel/touch_profile_mode
+  echo 3 > /proc/touchpanel/touch_response_mode
+  echo 3 > /proc/touchpanel/touch_sensitivity_mode
+  echo 3 > /proc/touchpanel/touch_profile_mode
 
 Read current values::
 
